@@ -17,6 +17,27 @@ for machine in client.machines.list():
 else:
     raise
 
+if machine.status != maas.client.enum.NodeStatus.READY:
+    raise RuntimeError("machine %s should be READY" % machine.hostname)
+
+for interface in machine.interfaces:
+    if interface.type == maas.client.enum.InterfaceType.BOND:
+        interface.delete()
+
+for vg in machine.volume_groups:
+    vg.delete()
+
+for disk in machine.block_devices:
+    if disk.type == maas.client.enum.BlockDeviceType.VIRTUAL:
+        disk.delete()
+
+for disk in machine.block_devices:
+    if disk.type == maas.client.enum.BlockDeviceType.PHYSICAL:
+        for partition in disk.partitions:
+            partition.delete()
+
+machine.refresh()
+
 fabric = client.fabrics.get_default()
 VLANS = dict((vlan.name, vlan) for vlan in fabric.vlans)
 
@@ -111,7 +132,8 @@ if machine.hostname.startswith("compute"):
 disks = []
 for disk in machine.block_devices:
     if "ssd" in disk.tags and "sata" in disk.tags and \
-            384*1024**3 < disk.size and disk.size < 640*1024**3:
+            disk.model == machine.boot_disk.model and \
+            disk.size == machine.boot_disk.size:
         disks.append(disk)
 
 if len(disks) != 2:
@@ -125,8 +147,6 @@ for disk in disks:
 
         partitions.append(disk.partitions.create(size=size))
 
-disks[0].set_as_boot_disk()
-
 raid = machine.raids.create(
     name="md0",
     level=maas.client.enum.RaidLevel.RAID_1,
@@ -139,11 +159,13 @@ raid.virtual_device.mount("/")
 
 if machine.hostname.startswith("controller"):
     machine.refresh()
-    machine.volume_groups.create(
-        name="lxc",
-        devices=[device for device in machine.block_devices
-                 if device.used_for == "Unused"]
-    )
+    devices = [device for device in machine.block_devices
+               if device.used_for == "Unused"]
+    if devices:
+        machine.volume_groups.create(
+            name="lxc",
+            devices=devices
+        )
 
 user_data = b'''#cloud-config
 users:
