@@ -121,6 +121,8 @@ if machine.hostname.startswith("compute"):
         subnet=subnet("vxlan"),
         ip_address=address(subnet("vxlan"), sys.argv[2]),
     )
+if machine.hostname.startswith("compute") or \
+        machine.hostname.startswith("storage"):
     machine.interfaces.get_by_name("br-storage").links.create(
         mode=maas.client.enum.LinkMode.STATIC,
         subnet=subnet("storage"),
