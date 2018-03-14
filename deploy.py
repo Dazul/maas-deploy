@@ -103,10 +103,10 @@ def address(subnet, host):
     return ".".join(split)
 
 
-machine.boot_interface.links.create(
-        mode=maas.client.enum.LinkMode.DHCP,
-        subnet=subnet("untagged")
-)
+# machine.boot_interface.links.create(
+#         mode=maas.client.enum.LinkMode.DHCP,
+#         subnet=subnet("untagged")
+# )
 
 machine.interfaces.get_by_name("br-mgmt").links.create(
         mode=maas.client.enum.LinkMode.STATIC,
