@@ -18,7 +18,8 @@ else:
     raise
 
 if machine.status != maas.client.enum.NodeStatus.READY:
-    raise RuntimeError("machine %s should be READY" % machine.hostname)
+    print("machine %s is not READY" % machine.hostname)
+    sys.exit(1)
 
 for interface in machine.interfaces:
     if interface.type == maas.client.enum.InterfaceType.BOND:
