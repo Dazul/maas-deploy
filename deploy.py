@@ -3,6 +3,7 @@
 import maas.client
 import os
 import sys
+import yaml
 
 BLOCK_SIZE = 4*1024**2
 
@@ -157,25 +158,47 @@ raid = machine.raids.create(
 raid.virtual_device.format("ext4")
 raid.virtual_device.mount("/")
 
-if machine.hostname.startswith("controller"):
-    machine.refresh()
-    devices = [device for device in machine.block_devices
-               if device.used_for == "Unused"]
-    if devices:
-        machine.volume_groups.create(
-            name="lxc",
-            devices=devices
-        )
+user_data = {
+    "users": [
+        "default",
+        {
+            "name": "root",
+            "ssh-authorized-keys": [
+                "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC9IO1q9mFYROZ13WEdkI2O1"
+                "o7HzxtsKD/bu7SeMm7KLGQd4wmR4PjhUw9wyLg4Bw/7C7bObX9IxiY/0m3mZ3"
+                "YTUq1Z9E9OllPaIoU95U17n+Xz9XujwyfJNOxKsHBUr5MMuu/fseQVgSQD84L"
+                "UWfKl29tb9ppLzoaYHO/hRx9niXcKXoEv84toBte1g87RHPWoHxkoh2I4wy4S"
+                "QVh5Eg/ur+fCw5qo3mvAIPJv62xV5wN/ACCcCw3Yl2iRf7ez12Jjfi13nGQCM"
+                "8Fc71FrttBLHB3vXnDEkF6A96SGG/IQHBDFytNM4ohw9/WMNGV1AHJ098LhSI"
+                "EYyTCRGAA30edsDnwAXJPi4AH2HgsbluhZQDM1+4uS3EqoOulre3Mjj7lAHAd"
+                "uaWuSplzUzct5JBmWwi6e8tLd3hcaEt93/QKJawaLTIg6iMgdBJYGAFTbhw/T"
+                "jlVN637wqt6/FWKSI64qg/pSaawTO/9vuwdnk6h1n2moz9HtI8H20vFBtpk0e"
+                "UtjJhJP2GqMvgR+G5OLAsS4xzZrQsfr6wQOWQ2QUbWGbAh6pWoLullVC+2JFm"
+                "9dOeqnYzh/7ELN3sEJBDj6SuytEiRo0JFzx1hZ8P2DsoNpTRVy0XNa2MGkSy/"
+                "Ka6I7lUOkYYjpXI39Bb9K0MhiCMMB9fKJHw0H32M56JRXbdjX2w== "
+                "ubuntu@maas"
+            ],
+        },
+    ],
+    "packages": [
+        "debootstrap",
+        "python",
+    ],
+}
 
-user_data = b'''#cloud-config
-users:
-  - default
-  - name: root
-    ssh-authorized-keys:
-      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC9IO1q9mFYROZ13WEdkI2O1o7HzxtsKD/bu7SeMm7KLGQd4wmR4PjhUw9wyLg4Bw/7C7bObX9IxiY/0m3mZ3YTUq1Z9E9OllPaIoU95U17n+Xz9XujwyfJNOxKsHBUr5MMuu/fseQVgSQD84LUWfKl29tb9ppLzoaYHO/hRx9niXcKXoEv84toBte1g87RHPWoHxkoh2I4wy4SQVh5Eg/ur+fCw5qo3mvAIPJv62xV5wN/ACCcCw3Yl2iRf7ez12Jjfi13nGQCM8Fc71FrttBLHB3vXnDEkF6A96SGG/IQHBDFytNM4ohw9/WMNGV1AHJ098LhSIEYyTCRGAA30edsDnwAXJPi4AH2HgsbluhZQDM1+4uS3EqoOulre3Mjj7lAHAduaWuSplzUzct5JBmWwi6e8tLd3hcaEt93/QKJawaLTIg6iMgdBJYGAFTbhw/TjlVN637wqt6/FWKSI64qg/pSaawTO/9vuwdnk6h1n2moz9HtI8H20vFBtpk0eUtjJhJP2GqMvgR+G5OLAsS4xzZrQsfr6wQOWQ2QUbWGbAh6pWoLullVC+2JFm9dOeqnYzh/7ELN3sEJBDj6SuytEiRo0JFzx1hZ8P2DsoNpTRVy0XNa2MGkSy/Ka6I7lUOkYYjpXI39Bb9K0MhiCMMB9fKJHw0H32M56JRXbdjX2w== ubuntu@maas
-packages:
-  - debootstrap
-  - python
-'''
+if machine.hostname.startswith("compute") or \
+        machine.hostname.startswith("controller"):
+    unused = ["/dev/" + device.name for device in machine.block_devices
+              if device.used_for == "Unused"]
 
+    if unused:
+        bootcmd = ["cloud-init-per", "once", "volume-group", "vgcreate"]
+        if machine.hostname.startswith("compute"):
+            bootcmd.append("libvirt")
+        else:
+            bootcmd.append("lxc")
+        bootcmd.extend(unused)
+        user_data.update({"bootcmd": [bootcmd]})
+
+user_data = b"#cloud-config\n" + yaml.dump(user_data).encode("utf-8")
 machine.deploy(user_data=user_data)
