@@ -66,9 +66,6 @@ bond = machine.interfaces.create(
 
 vlans = {"mgmt": 1792, "vxlan": 1793, "storage": 1794}
 
-if machine.hostname.startswith("controller"):
-    del vlans["storage"]
-
 if machine.hostname.startswith("storage"):
     del vlans["vxlan"]
 
