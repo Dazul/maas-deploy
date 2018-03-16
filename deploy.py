@@ -188,6 +188,7 @@ user_data = {
 
 if machine.hostname.startswith("compute") or \
         machine.hostname.startswith("controller"):
+    machine.refresh()
     unused = ["/dev/" + device.name for device in machine.block_devices
               if device.used_for == "Unused"]
 
