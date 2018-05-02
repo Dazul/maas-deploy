@@ -1,0 +1,22 @@
+lab:
+    os: ubuntu_16.04
+    os_raid1:
+        size: 512
+        disk1: sda
+        disk2: sdb
+    net_bounding:
+        slaves:
+            - enp4f0s0
+            - enp4f0s1
+        name: bond0
+    vlans:
+        - vlan1: 1
+        - vlan2: 2
+        - vlan3: 3
+    os_partition:
+        var: 200G
+        tmp: 140G
+        boot: 1G
+        home: 50G
+    os_packages:
+        - saltstack
