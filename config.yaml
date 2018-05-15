@@ -6,8 +6,8 @@ lab:
         disk2: sdb
     net_bounding:
         slaves:
-            - enp4f0s0
-            - enp4f0s1
+            - enp4s0f0
+            - enp4s0f1
         name: bond0
     vlans:
         - vlan1: 1
