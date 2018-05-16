@@ -26,17 +26,45 @@ def cleanup_machine(machine):
 
     machine.refresh()
 
-def configure_system_disks(machine):
-    disks = []
-    for disk in machine.block_devices:
-        if "ssd" in disk.tags and "sata" in disk.tags and \
-                disk.model == machine.boot_disk.model and \
-                disk.size == machine.boot_disk.size:
-            disks.append(disk)
-    
-    if len(disks) != 2:
-        raise
-    
+def define_os_disks(machine, os_raid=None):
+    os_disks = []
+    if os_raid is None:
+        by_size = {}
+        for disk in machine.block_devices:
+            if disk.size in by_size.keys():
+                by_size[disk.size].append(disk)
+            else:
+                by_size[disk.size] = [disk]
+        
+        found_os_disks = False
+        for key in by_size:
+            if len(by_size[key]) == 2:
+                if not found_os_disks:
+                    found_os_disks = True
+                    os_disks = by_size[key]
+                elif found_os_disks:
+                    print("Ambiguous pair of disks")
+                    sys.exit(-1)
+        
+        if not found_os_disks:
+            print("Os disks can not be automatically discover")
+            sys.exit(-1)
+
+        return os_disks
+
+    if 'disk1' in os_raid.keys() and 'disk2' in os_raid.keys():
+        for disk in machine.block_devices:
+            if disk.name == os_raid['disk1'] or disk.name == os_raid['disk2']:
+                os_disks.append(disk)
+        if len(os_disks) != 2:
+            print("Disks not properly defined")
+            sys.exit(-1)
+
+        return os_disks
+
+def configure_system_disks(machine, os_raid=None):
+    disks = define_os_disks(machine, os_raid)
+        
     partitions = []
     for disk in disks:
             # Align partition on 4 MiB blocks
@@ -69,7 +97,6 @@ def configure_network(machine, client, net_bounding=None):
     if net_bounding is not None:
         parents = []
         for interface in machine.interfaces:
-            import pdb; pdb.set_trace()
             if interface.name in net_bounding['slaves']:
                 parents.append(interface)
         
@@ -94,6 +121,10 @@ def main():
     if 'net_bounding' in config[root]:
         net_bounding = config[root]['net_bounding']
 
+    os_raid = None
+    if 'os_raid1' in config[root]:
+        os_raid = config[root]['os_raid1']
+
     client = maas.client.connect(
         "http://maas.admin.eu-zrh.hub.k.grp:5240/MAAS",
         apikey=os.getenv("MAAS_API_KEY")
@@ -111,7 +142,7 @@ def main():
 
     cleanup_machine(machine)
     configure_network(machine, client, net_bounding)
-#    configure_system_disks(machine)
+    configure_system_disks(machine, os_raid)
 #    machine.deploy()
 
 if __name__ == "__main__":

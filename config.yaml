@@ -2,8 +2,8 @@ lab:
     os: ubuntu_16.04
     os_raid1:
         size: 512
-        disk1: sda
-        disk2: sdb
+        disk1: sde
+        disk2: sdf
     net_bounding:
         slaves:
             - enp4s0f0
