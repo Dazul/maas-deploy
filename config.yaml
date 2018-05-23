@@ -1,9 +1,15 @@
 lab:
     os: ubuntu_16.04
     os_raid1:
-        size: 512
-        disk1: sde
-        disk2: sdf
+#        size: 512
+        disk1: sda
+        disk2: sdc
+        os_partitions:
+            /var: 20G
+            /tmp: 14G
+            /boot: 1G
+            /: 60G
+            /home: 20G
     net_bounding:
         slaves:
             - enp4s0f0
@@ -13,10 +19,5 @@ lab:
         - vlan1: 1
         - vlan2: 2
         - vlan3: 3
-    os_partition:
-        var: 200G
-        tmp: 140G
-        boot: 1G
-        home: 50G
     os_packages:
         - saltstack

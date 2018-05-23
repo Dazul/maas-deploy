@@ -28,6 +28,8 @@ def cleanup_machine(machine):
 
 def define_os_disks(machine, os_raid=None):
     os_disks = []
+    
+    # default disk discovery
     if os_raid is None:
         by_size = {}
         for disk in machine.block_devices:
@@ -52,6 +54,7 @@ def define_os_disks(machine, os_raid=None):
 
         return os_disks
 
+    # disks defined
     if 'disk1' in os_raid.keys() and 'disk2' in os_raid.keys():
         for disk in machine.block_devices:
             if disk.name == os_raid['disk1'] or disk.name == os_raid['disk2']:
@@ -64,14 +67,16 @@ def define_os_disks(machine, os_raid=None):
 
 def configure_system_disks(machine, os_raid=None):
     disks = define_os_disks(machine, os_raid)
-        
+ 
     partitions = []
+
+    # default partition
     for disk in disks:
-            # Align partition on 4 MiB blocks
-            blocks = disk.available_size // BLOCK_SIZE
-            size = blocks * BLOCK_SIZE - 1
-    
-            partitions.append(disk.partitions.create(size=size))
+        # Align partition on 4 MiB blocks
+        blocks = disk.available_size // BLOCK_SIZE
+        size = blocks * BLOCK_SIZE - 1
+
+        partitions.append(disk.partitions.create(size=size))
     
     raid = machine.raids.create(
         name="md0",
@@ -79,9 +84,15 @@ def configure_system_disks(machine, os_raid=None):
         devices=partitions,
         spare_devices=[],
     )
-    
-    raid.virtual_device.format("ext4")
-    raid.virtual_device.mount("/")
+
+    if 'os_partitions' not in os_raid:
+        raid.virtual_device.format("ext4")
+        raid.virtual_device.mount("/")
+    else:
+        for os_part in os_raid['os_partitions']:
+            part = raid.virtual_device.partitions.create(os_raid['os_partitions'][os_part])
+            part.format("ext4")
+            part.mount(os_part)
 
     machine.refresh()
 
