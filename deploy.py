@@ -89,8 +89,8 @@ def configure_system_disks(machine, os_raid=None):
         raid.virtual_device.format("ext4")
         raid.virtual_device.mount("/")
     else:
-        for os_part in os_raid['os_partitions']:
-            part = raid.virtual_device.partitions.create(os_raid['os_partitions'][os_part])
+        for os_part, size in os_raid['os_partitions'].items():
+            part = raid.virtual_device.partitions.create(size)
             part.format("ext4")
             part.mount(os_part)
 
@@ -119,6 +119,28 @@ def configure_network(machine, client, net_bounding=None):
             bond_lacp_rate="fast",
             bond_xmit_hash_policy="layer3+4"
         )
+
+        if 'vlans' in net_bounding:
+            fabric = client.fabrics.get_default()
+            VLANS = dict((vlan.name, vlan) for vlan in fabric.vlans)
+            bond.vlan = fabric.vlans.get_default()
+            bond.save()
+
+            fabric = client.fabrics.get_default()
+            VLANS = dict((vlan.name, vlan) for vlan in fabric.vlans)
+            for vlan, vid in net_bounding['vlans'].items():
+                vif = machine.interfaces.create(
+                    name="bond0.%d" % vid,
+                    interface_type=maas.client.enum.InterfaceType.VLAN,
+                    parent=bond,
+                    vlan=VLANS[str(vid)]
+                )
+
+                machine.interfaces.create(
+                    name="br-%s" % vlan,
+                    interface_type=maas.client.enum.InterfaceType.BRIDGE,
+                    parent=vif
+                )
 
     machine.refresh()
 
@@ -154,7 +176,17 @@ def main():
     cleanup_machine(machine)
     configure_network(machine, client, net_bounding)
     configure_system_disks(machine, os_raid)
-#    machine.deploy()
+
+    distro_name = None
+    user_data = None
+    if 'os' in config[root]:
+        distro_name = distro_series=config[root]['os']
+
+    if 'os_packages' in config[root]:
+        user_data = {"packages": config[root]['os_packages']}
+        user_data = b"#cloud-config\n" + yaml.dump(user_data).encode("utf-8")
+
+    machine.deploy(distro_series=distro_name, user_data=user_data)
 
 if __name__ == "__main__":
     main()
