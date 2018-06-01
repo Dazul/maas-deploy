@@ -101,18 +101,18 @@ def get_subnet(client, subnet_name):
         if subnet.name == subnet_name:
             return subnet
 
-def configure_network(machine, client, net_bounding=None):
+def configure_network(machine, client, net_bonding=None):
     machine.boot_interface.links[0].delete()
     machine.boot_interface.links.create(mode=maas.client.enum.LinkMode.DHCP)
 
-    if net_bounding is not None:
+    if net_bonding is not None:
         parents = []
         for interface in machine.interfaces:
-            if interface.name in net_bounding['slaves']:
+            if interface.name in net_bonding['slaves']:
                 parents.append(interface)
         
         bond = machine.interfaces.create(
-            name=net_bounding['name'],
+            name=net_bonding['name'],
             interface_type=maas.client.enum.InterfaceType.BOND,
             parents=parents,
             bond_mode="802.3ad",
@@ -120,7 +120,7 @@ def configure_network(machine, client, net_bounding=None):
             bond_xmit_hash_policy="layer3+4"
         )
 
-        if 'vlans' in net_bounding:
+        if 'vlans' in net_bonding:
             fabric = client.fabrics.get_default()
             VLANS = dict((vlan.name, vlan) for vlan in fabric.vlans)
             bond.vlan = fabric.vlans.get_default()
@@ -128,7 +128,7 @@ def configure_network(machine, client, net_bounding=None):
 
             fabric = client.fabrics.get_default()
             VLANS = dict((vlan.name, vlan) for vlan in fabric.vlans)
-            for vlan, vid in net_bounding['vlans'].items():
+            for vlan, vid in net_bonding['vlans'].items():
                 vif = machine.interfaces.create(
                     name="bond0.%d" % vid,
                     interface_type=maas.client.enum.InterfaceType.VLAN,
@@ -144,15 +144,28 @@ def configure_network(machine, client, net_bounding=None):
 
     machine.refresh()
 
+def build_user_data(config):
+    user_data = {}
+
+    if 'packages' in config:
+        user_data["packages"] = config['packages']
+
+    if 'sources' in config:
+        user_data['apt'] = {'preserve_sources_list': True,
+                            'sources': config['sources']}
+
+    user_data = b"#cloud-config\n" + yaml.dump(user_data).encode("utf-8")
+    return user_data
+
 def main():
     
     hostname = sys.argv[1]
     config = yaml.load(open(sys.argv[2]))
     root = list(config.keys())[0]
 
-    net_bounding = None
-    if 'net_bounding' in config[root]:
-        net_bounding = config[root]['net_bounding']
+    net_bonding = None
+    if 'net_bonding' in config[root]:
+        net_bonding = config[root]['net_bonding']
 
     os_raid = None
     if 'os_raid1' in config[root]:
@@ -174,18 +187,14 @@ def main():
         sys.exit(1)
 
     cleanup_machine(machine)
-    configure_network(machine, client, net_bounding)
+    configure_network(machine, client, net_bonding)
     configure_system_disks(machine, os_raid)
 
     distro_name = None
-    user_data = None
     if 'os' in config[root]:
         distro_name = distro_series=config[root]['os']
 
-    if 'os_packages' in config[root]:
-        user_data = {"packages": config[root]['os_packages']}
-        user_data = b"#cloud-config\n" + yaml.dump(user_data).encode("utf-8")
-
+    user_data = build_user_data(config[root])
     machine.deploy(distro_series=distro_name, user_data=user_data)
 
 if __name__ == "__main__":

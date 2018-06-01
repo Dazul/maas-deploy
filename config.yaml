@@ -1,7 +1,6 @@
 lab:
-    os: bionic
+    os: xenial
     os_raid1:
-#        size: 512
         disk1: sda
         disk2: sdc
         os_partitions:
@@ -10,7 +9,7 @@ lab:
             /boot: 1G
             /: 60G
             /home: 20G
-    net_bounding:
+    net_bonding:
         slaves:
             - enp4s0f0
             - enp4s0f1
@@ -18,5 +17,9 @@ lab:
         vlans:
             br-mgmt: 2126
             br-storage: 2128
-    os_packages:
-        - saltstack
+    packages:
+        - salt-minion
+    sources:
+        saltstack:
+            source: deb http://repo.saltstack.com/apt/ubuntu/16.04/amd64/latest $RELEASE main
+            keyid: 754A1A7AE731F165D5E6D4BD0E08A149DE57BFBE
