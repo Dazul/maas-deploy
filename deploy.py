@@ -55,9 +55,9 @@ def define_os_disks(machine, os_raid=None):
         return os_disks
 
     # disks defined
-    if 'disk1' in os_raid.keys() and 'disk2' in os_raid.keys():
+    if 'disks' in os_raid.keys() and len(os_raid['disks']) == 2:
         for disk in machine.block_devices:
-            if disk.name == os_raid['disk1'] or disk.name == os_raid['disk2']:
+            if disk.name in os_raid['disks']:
                 os_disks.append(disk)
         if len(os_disks) != 2:
             print("Disks not properly defined")

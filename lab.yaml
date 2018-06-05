@@ -1,8 +1,9 @@
 lab:
     os: xenial
     os_raid1:
-        disk1: sda
-        disk2: sdc
+        disks: 
+            - sda
+            - sdc
         os_partitions:
             /var: 20G
             /tmp: 14G
@@ -17,8 +18,8 @@ lab:
         vlans:
             br-mgmt: 2126
             br-storage: 2128
-    packages:
-        - salt-minion
+#    packages:
+#        - salt-minion
     sources:
         saltstack:
             source: deb http://repo.saltstack.com/apt/ubuntu/16.04/amd64/latest $RELEASE main
