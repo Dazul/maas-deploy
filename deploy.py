@@ -85,13 +85,13 @@ def configure_system_disks(machine, os_raid=None):
         spare_devices=[],
     )
 
-    if 'os_partitions' not in os_raid:
+    if os_raid is None or 'os_partitions' not in os_raid:
         raid.virtual_device.format("ext4")
         raid.virtual_device.mount("/")
-    else:
-        for os_part, size in os_raid['os_partitions'].items():
-            part = raid.virtual_device.partitions.create(size)
-            part.format("ext4")
+    elif 'os_partitions' in os_raid:
+        for os_part, infos in os_raid['os_partitions'].items():
+            part = raid.virtual_device.partitions.create(infos["size"])
+            part.format(infos["filesystem"])
             part.mount(os_part)
 
     machine.refresh()
@@ -144,32 +144,56 @@ def configure_network(machine, client, net_bonding=None):
 
     machine.refresh()
 
-def build_user_data(config):
+
+def get_item_configs(key, host_config, template):
+    item = None
+    if key in host_config:
+        item = host_config[key]
+    elif key in template:
+        item = template[key]
+    return item
+
+def build_user_data(host_config, template):
     user_data = {}
 
-    if 'packages' in config:
-        user_data["packages"] = config['packages']
+    if 'packages' in host_config:
+        user_data['packages'] = host_config['packages']
+    elif 'packages' in template:
+        user_data['packages'] = template['packages']
 
-    if 'sources' in config:
+    if 'sources' in host_config:
         user_data['apt'] = {'preserve_sources_list': True,
-                            'sources': config['sources']}
+                            'sources': host_config['sources']}
+    elif 'sources' in template:
+        user_data['apt'] = {'preserve_sources_list': True,
+                            'sources': template['sources']}
 
     user_data = b"#cloud-config\n" + yaml.dump(user_data).encode("utf-8")
     return user_data
 
-def main():
+def parse_config(host_config):
     
-    hostname = sys.argv[1]
-    config = yaml.load(open(sys.argv[2]))
-    root = list(config.keys())[0]
+    if 'template' in host_config:
+        template_full = yaml.load(open(host_config['template']))
+        template_name = list(template_full.keys())[0]
+        template = template_full[template_name]
+    else:
+        template = {}
 
-    net_bonding = None
-    if 'net_bonding' in config[root]:
-        net_bonding = config[root]['net_bonding']
+    net_bonding = get_item_configs('net_bonding', host_config, template)
 
-    os_raid = None
-    if 'os_raid1' in config[root]:
-        os_raid = config[root]['os_raid1']
+    os_raid = get_item_configs('os_raid1', host_config, template)
+
+    distro_name = get_item_configs('os', host_config, template)
+
+    user_data = build_user_data(host_config, template)
+
+    return net_bonding, os_raid, distro_name, user_data
+
+def main():
+
+    yaml_config = yaml.load(open(sys.argv[1]))
+    hostname = list(yaml_config.keys())[0]
 
     client = maas.client.connect(
         "http://maas.admin.eu-zrh.hub.k.grp:5240/MAAS",
@@ -186,15 +210,17 @@ def main():
         print("machine %s is not READY" % machine.hostname)
         sys.exit(1)
 
+    config_items = parse_config(yaml_config[hostname])
+    net_bonding = config_items[0]
+    os_raid = config_items[1]
+    distro_name = config_items[2]
+    user_data = config_items[3]
+
     cleanup_machine(machine)
     configure_network(machine, client, net_bonding)
     configure_system_disks(machine, os_raid)
 
-    distro_name = None
-    if 'os' in config[root]:
-        distro_name = distro_series=config[root]['os']
 
-    user_data = build_user_data(config[root])
     machine.deploy(distro_series=distro_name, user_data=user_data)
 
 if __name__ == "__main__":

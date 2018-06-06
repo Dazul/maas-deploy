@@ -1,15 +1,25 @@
 lab:
-    os: xenial
+    os: bionic
     os_raid1:
         disks: 
             - sda
             - sdc
         os_partitions:
-            /var: 20G
-            /tmp: 14G
-            /boot: 1G
-            /: 60G
-            /home: 20G
+            /var:
+                size: 20G
+                filesystem: ext4
+            /tmp:
+                size: 20G
+                filesystem: btrfs
+            /boot:
+                size: 1G
+                filesystem: ext4
+            /:
+                size: 60G
+                filesystem: xfs
+            /home:
+                size: 19G
+                filesystem: ext4
     net_bonding:
         slaves:
             - enp4s0f0
