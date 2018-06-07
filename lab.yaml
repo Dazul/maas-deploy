@@ -15,7 +15,7 @@ lab:
                 size: 1G
                 filesystem: ext4
             /:
-                size: 60G
+                size: 59G
                 filesystem: xfs
             /home:
                 size: 19G
