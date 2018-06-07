@@ -26,7 +26,7 @@ def cleanup_machine(machine):
 
     machine.refresh()
 
-def define_os_disks(machine, os_raid=None):
+def define_os_disks(machine, os_raid=None, os_partitions=None):
     os_disks = []
     
     # default disk discovery
@@ -65,12 +65,11 @@ def define_os_disks(machine, os_raid=None):
 
         return os_disks
 
-def configure_system_disks(machine, os_raid=None):
+def configure_system_disks(machine, os_raid=None, os_partitions=None):
     disks = define_os_disks(machine, os_raid)
  
     partitions = []
 
-    # default partition
     for disk in disks:
         # Align partition on 4 MiB blocks
         blocks = disk.available_size // BLOCK_SIZE
@@ -85,11 +84,11 @@ def configure_system_disks(machine, os_raid=None):
         spare_devices=[],
     )
 
-    if os_raid is None or 'os_partitions' not in os_raid:
+    if os_partitions is None:
         raid.virtual_device.format("ext4")
         raid.virtual_device.mount("/")
-    elif 'os_partitions' in os_raid:
-        for os_part, infos in os_raid['os_partitions'].items():
+    else:
+        for os_part, infos in os_partitions.items():
             part = raid.virtual_device.partitions.create(infos["size"])
             part.format(infos["filesystem"])
             part.mount(os_part)
@@ -172,11 +171,11 @@ def build_user_data(host_config, template):
     return user_data
 
 def parse_config(host_config):
-    
+    if host_config is None:
+        host_config = {}
+
     if 'template' in host_config:
-        template_full = yaml.load(open(host_config['template']))
-        template_name = list(template_full.keys())[0]
-        template = template_full[template_name]
+        template = yaml.load(open(host_config['template']))
     else:
         template = {}
 
@@ -184,11 +183,13 @@ def parse_config(host_config):
 
     os_raid = get_item_configs('os_raid1', host_config, template)
 
+    os_partitions = get_item_configs('os_partitions', host_config, template)
+
     distro_name = get_item_configs('os', host_config, template)
 
     user_data = build_user_data(host_config, template)
 
-    return net_bonding, os_raid, distro_name, user_data
+    return net_bonding, os_raid, os_partitions, distro_name, user_data
 
 def main():
 
@@ -213,12 +214,13 @@ def main():
     config_items = parse_config(yaml_config[hostname])
     net_bonding = config_items[0]
     os_raid = config_items[1]
-    distro_name = config_items[2]
-    user_data = config_items[3]
+    os_partitions = config_items[2]
+    distro_name = config_items[3]
+    user_data = config_items[4]
 
     cleanup_machine(machine)
     configure_network(machine, client, net_bonding)
-    configure_system_disks(machine, os_raid)
+    configure_system_disks(machine, os_raid, os_partitions)
 
 
     machine.deploy(distro_series=distro_name, user_data=user_data)

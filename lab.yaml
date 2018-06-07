@@ -1,36 +1,41 @@
-lab:
-    os: bionic
-    os_raid1:
-        disks: 
-            - sda
-            - sdc
-        os_partitions:
-            /var:
-                size: 20G
-                filesystem: ext4
-            /tmp:
-                size: 20G
-                filesystem: btrfs
-            /boot:
-                size: 1G
-                filesystem: ext4
-            /:
-                size: 59G
-                filesystem: xfs
-            /home:
-                size: 19G
-                filesystem: ext4
-    net_bonding:
-        slaves:
-            - enp4s0f0
-            - enp4s0f1
-        name: bond0
-        vlans:
-            br-mgmt: 2126
-            br-storage: 2128
-#    packages:
-#        - salt-minion
-    sources:
-        saltstack:
-            source: deb http://repo.saltstack.com/apt/ubuntu/16.04/amd64/latest $RELEASE main
-            keyid: 754A1A7AE731F165D5E6D4BD0E08A149DE57BFBE
+template_name: Lab
+
+os: bionic
+
+os_raid1:
+    disks:
+        - sda
+        - sdc
+
+os_partitions:
+    /var:
+        size: 20G
+        filesystem: ext4
+    /tmp:
+        size: 20G
+        filesystem: btrfs
+    /boot:
+        size: 1G
+        filesystem: ext4
+    /:
+        size: 59G
+        filesystem: xfs
+    /home:
+        size: 19G
+        filesystem: ext4
+
+net_bonding:
+    slaves:
+        - enp4s0f0
+        - enp4s0f1
+    name: bond0
+    vlans:
+        br-mgmt: 2126
+        br-storage: 2128
+
+packages:
+    - salt-minion
+sources:
+    saltstack:
+        source: deb http://repo.saltstack.com/apt/ubuntu/16.04/amd64/latest $RELEASE main
+        keyid: 754A1A7AE731F165D5E6D4BD0E08A149DE57BFBE
