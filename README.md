@@ -33,12 +33,17 @@ Items
 os
 --
 
+OS we want to deploy on the node. The options here are the same as using the maas API. For example, use **xenial** for ubuntu 16.04 or **bionic** for ubuntu 18.04. Default value if not specifed is the MAAS default.
+ 
+
 ```yaml
 os: bionic
 ```
 
 os_raid1
 --------
+
+Only raid 1 for os disks is implemented yet. If the option is set, the entry **disks** will contain the list of disks to use on the raid cluster. If this item is not specified, the script will try to guess the 2 disks to use as system disks.
 
 ```yaml
 os_raid1:
@@ -49,6 +54,8 @@ os_raid1:
 
 os_partitions
 -------------
+
+You can define a partition for the os_disks by declaring the mount point. Then, you define the size of the partition and the filesystem. Yet the size and filesystem is mandatory for each mount point, but the filesystem could be optional on future releases.
 
 ```yaml
 os_partitions:
@@ -72,6 +79,9 @@ os_partitions:
 net_bounding
 ------------
 
+Net bounding has 3 parameters, two mandatory and one optional. Mandatory ones are slaves, which contains the network interface for the bond, and name, which will be the bond interface name. You can attach vlans to the bound. The vlans numbers specified need to exist on MaaS.
+Bond parameters are hard coded yet to `bond_mode="802.3ad"`, `bond_lacp_rate="fast"`, `bond_xmit_hash_policy="layer3+4"`.
+
 ```yaml
 net_bonding:
     slaves:
@@ -86,6 +96,8 @@ net_bonding:
 packages
 --------
 
+You can list all the packages you want to be apt installed during the installation. Example with salt-minion package:
+
 ```yaml
 packages:
     - salt-minion
@@ -93,6 +105,8 @@ packages:
 
 sources
 -------
+
+If you want to use a personalized apt repository, you define it here, with the coresponding key. Example with saltstack repo:
 
 ```yaml
 sources:
