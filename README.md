@@ -17,10 +17,12 @@ For more about libmaas, visit: https://maas.github.io/python-libmaas/
 Usage
 -----
 
+```console
 export MAAS_API_URL=<Maas url>
 export MAAS_API_KEY=<Private API key>
 
 deploy.py my_fancy_machine.yaml
+```
 
 Description File
 ================
