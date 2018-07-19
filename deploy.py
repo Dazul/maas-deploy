@@ -186,27 +186,19 @@ def parse_config(host_config):
     user_data = build_user_data(host_config, template)
     return net_bonding, os_raid, os_partitions, distro_name, user_data
 
-def main():
-
-    yaml_config = yaml.load(open(sys.argv[1]))
-    hostname = list(yaml_config.keys())[0]
-
-    client = maas.client.connect(
-        os.getenv("MAAS_API_URL"),
-        apikey=os.getenv("MAAS_API_KEY")
-    )
-
+def run_machine(hostname, yaml_config, client):
     for machine in client.machines.list():
         if machine.hostname == hostname:
             break
     else:
-        raise
+        print("No machine named %s found" % hostname)
+        return
 
     if machine.status != maas.client.enum.NodeStatus.READY:
         print("machine %s is not READY" % machine.hostname)
-        sys.exit(1)
+        return
 
-    config_items = parse_config(yaml_config[hostname])
+    config_items = parse_config(yaml_config)
     net_bonding = config_items[0]
     os_raid = config_items[1]
     os_partitions = config_items[2]
@@ -220,6 +212,19 @@ def main():
 
     machine.deploy(distro_series=distro_name, user_data=user_data)
     print("Machine %s is now in %s state." % (hostname, machine.status._name_ ))
+
+
+def main():
+
+    yaml_config = yaml.load(open(sys.argv[1]))
+
+    client = maas.client.connect(
+        os.getenv("MAAS_API_URL"),
+        apikey=os.getenv("MAAS_API_KEY")
+    )
+
+    for hostname in yaml_config:
+        run_machine(hostname, yaml_config[hostname], client)
 
 if __name__ == "__main__":
     main()
