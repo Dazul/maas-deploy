@@ -28,7 +28,7 @@ def cleanup_machine(machine):
 
 def define_os_disks(machine, os_raid=None, os_partitions=None):
     os_disks = []
-    
+
     # default disk discovery
     if os_raid is None:
         by_size = {}
@@ -37,7 +37,7 @@ def define_os_disks(machine, os_raid=None, os_partitions=None):
                 by_size[disk.size].append(disk)
             else:
                 by_size[disk.size] = [disk]
-        
+
         found_os_disks = False
         for key in by_size:
             if len(by_size[key]) == 2:
@@ -47,7 +47,7 @@ def define_os_disks(machine, os_raid=None, os_partitions=None):
                 elif found_os_disks:
                     print("Ambiguous pair of disks")
                     sys.exit(-1)
-        
+
         if not found_os_disks:
             print("Os disks can not be automatically discover")
             sys.exit(-1)
@@ -67,7 +67,7 @@ def define_os_disks(machine, os_raid=None, os_partitions=None):
 
 def configure_system_disks(machine, os_raid=None, os_partitions=None):
     disks = define_os_disks(machine, os_raid)
- 
+
     partitions = []
 
     for disk in disks:
@@ -76,7 +76,7 @@ def configure_system_disks(machine, os_raid=None, os_partitions=None):
         size = blocks * BLOCK_SIZE - 1
 
         partitions.append(disk.partitions.create(size=size))
-    
+
     raid = machine.raids.create(
         name="md0",
         level=maas.client.enum.RaidLevel.RAID_1,
@@ -109,7 +109,7 @@ def configure_network(machine, client, net_bonding=None):
         for interface in machine.interfaces:
             if interface.name in net_bonding['slaves']:
                 parents.append(interface)
-        
+
         bond = machine.interfaces.create(
             name=net_bonding['name'],
             interface_type=maas.client.enum.InterfaceType.BOND,
@@ -197,10 +197,10 @@ def main():
     hostname = list(yaml_config.keys())[0]
 
     client = maas.client.connect(
-        "http://maas.admin.eu-zrh.hub.k.grp:5240/MAAS",
+        os.getenv("MAAS_API_URL"),
         apikey=os.getenv("MAAS_API_KEY")
     )
-    
+
     for machine in client.machines.list():
         if machine.hostname == hostname:
             break
@@ -224,6 +224,7 @@ def main():
 
 
     machine.deploy(distro_series=distro_name, user_data=user_data)
+    print("Machine %s is now in %s state." % (hostname, machine.status._name_ ))
 
 if __name__ == "__main__":
     main()

@@ -6,7 +6,8 @@ Maas deploy is used to configure and deploy bare-metal machines. It uses in inpu
 Usage
 -----
 
-export MAAS_API_KEY=123KEY456
+export MAAS_API_URL=<Maas url>
+export MAAS_API_KEY=<Private API key>
 
 deploy.py my_fancy_machine.yaml
 
@@ -34,7 +35,7 @@ os
 --
 
 OS we want to deploy on the node. The options here are the same as using the maas API. For example, use **xenial** for ubuntu 16.04 or **bionic** for ubuntu 18.04. Default value if not specifed is the MAAS default.
- 
+
 
 ```yaml
 os: bionic
