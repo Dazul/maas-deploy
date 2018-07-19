@@ -3,6 +3,17 @@ Maas-Deploy
 
 Maas deploy is used to configure and deploy bare-metal machines. It uses in input a yaml file containing the description of the machine we want to deploy. Maas-deploy uses an OS env variable with your API key. The variable is named MAAS_API_KEY.
 
+Dependencies
+------------
+
+maas-deploy used python 3 to run. And the only dependency it has is with MAAS Client Library & CLI (python-libmaas). You can intall it with pip. Just run:
+
+```console
+pip install python-libmaas
+```
+
+For more about libmaas, visit: https://maas.github.io/python-libmaas/
+
 Usage
 -----
 
