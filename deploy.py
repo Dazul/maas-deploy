@@ -180,15 +180,10 @@ def parse_config(host_config):
         template = {}
 
     net_bonding = get_item_configs('net_bonding', host_config, template)
-
     os_raid = get_item_configs('os_raid1', host_config, template)
-
     os_partitions = get_item_configs('os_partitions', host_config, template)
-
     distro_name = get_item_configs('os', host_config, template)
-
     user_data = build_user_data(host_config, template)
-
     return net_bonding, os_raid, os_partitions, distro_name, user_data
 
 def main():
