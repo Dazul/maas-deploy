@@ -152,7 +152,7 @@ def get_item_configs(key, host_config, template):
         item = template[key]
     return item
 
-def build_user_data(host_config, template):
+def build_user_data(machine, host_config, template):
     user_data = {}
 
     if 'packages' in host_config:
@@ -166,6 +166,19 @@ def build_user_data(host_config, template):
     elif 'sources' in template:
         user_data['apt'] = {'preserve_sources_list': True,
                             'sources': template['sources']}
+
+    if 'unused_disks' in host_config:
+        unused = ["/dev/" + device.name for device in machine.block_devices
+                  if device.used_for == "Unused"]
+        bootcmd = host_config['unused_disks']['bootcmd']
+        bootcmd.extend(unused)
+        user_data.update({"bootcmd": [bootcmd]})
+    elif 'unused_disks' in template:
+        unused = ["/dev/" + device.name for device in machine.block_devices
+                  if device.used_for == "Unused"]
+        bootcmd = template['unused_disks']['bootcmd']
+        bootcmd.extend(unused)
+        user_data.update({"bootcmd": [bootcmd]})
 
     user_data = b"#cloud-config\n" + yaml.dump(user_data).encode("utf-8")
     return user_data
@@ -183,8 +196,7 @@ def parse_config(host_config):
     os_raid = get_item_configs('os_raid1', host_config, template)
     os_partitions = get_item_configs('os_partitions', host_config, template)
     distro_name = get_item_configs('os', host_config, template)
-    user_data = build_user_data(host_config, template)
-    return net_bonding, os_raid, os_partitions, distro_name, user_data
+    return net_bonding, os_raid, os_partitions, distro_name, host_config, template
 
 def run_machine(hostname, yaml_config, client):
     for machine in client.machines.list():
@@ -203,13 +215,15 @@ def run_machine(hostname, yaml_config, client):
     os_raid = config_items[1]
     os_partitions = config_items[2]
     distro_name = config_items[3]
-    user_data = config_items[4]
+    host_config = config_items[4]
+    template = config_items[5]
 
     cleanup_machine(machine)
     configure_network(machine, client, net_bonding)
     configure_system_disks(machine, os_raid, os_partitions)
 
-
+    machine.refresh()
+    user_data = build_user_data(machine, host_config, template)
     machine.deploy(distro_series=distro_name, user_data=user_data)
     print("Machine %s is now in %s state." % (hostname, machine.status._name_ ))
 

@@ -1,7 +1,3 @@
 ---
 staging-dc1r07n02:
     template: lab.yaml
-labo1:
-    template: lab.yaml
-labo2:
-    template: lab.yaml

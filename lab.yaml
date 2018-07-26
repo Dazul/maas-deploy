@@ -39,3 +39,19 @@ sources:
     saltstack:
         source: deb http://repo.saltstack.com/apt/ubuntu/16.04/amd64/latest $RELEASE main
         keyid: 754A1A7AE731F165D5E6D4BD0E08A149DE57BFBE
+
+unused_disks:
+    bootcmd:
+         - cloud-init-per
+         - once
+         - softraid
+         - mdadm
+         - --create
+         - /dev/md1
+         - --level=6
+         - --raid-devices=4
+#        - cloud-init-per
+#        - once
+#        - volume-group
+#        - vgcreate
+#        - lxc
