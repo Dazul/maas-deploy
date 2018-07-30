@@ -136,5 +136,20 @@ template
 template: lab.yaml
 ```
 
-Example
-=======
+unused_disks
+------------
+
+If you want to prepare the disks that are not used in maas, you can use a bootcmd. You can use the `cloud-init-per once` where each parameter is a value on a list on the yaml.
+
+```yaml
+unused_disks:
+    bootcmd:
+         - cloud-init-per
+         - once
+         - softraid
+         - mdadm
+         - --create
+         - /dev/md1
+         - --level=6
+         - --raid-devices=4
+```
