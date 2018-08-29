@@ -213,7 +213,7 @@ def run_machine(hostname, yaml_config, client):
     if machine.status != maas.client.enum.NodeStatus.READY:
         print("machine %s is not READY" % machine.hostname)
         return
-
+    print("Starting deployement of %s" % machine.hostname)
     config_items = parse_config(yaml_config)
     net_bonding = config_items[0]
     os_raid = config_items[1]
