@@ -69,13 +69,14 @@ def configure_system_disks(machine, os_raid=None, os_partitions=None):
     disks = define_os_disks(machine, os_raid)
 
     partitions = []
-
     for disk in disks:
         # Align partition on 4 MiB blocks
         blocks = disk.available_size // BLOCK_SIZE
         size = blocks * BLOCK_SIZE - 1
-
-        partitions.append(disk.partitions.create(size=size))
+        try:
+            partitions.append(disk.partitions.create(size=size))
+        except:
+            partitions.append(disk.partitions.create(size=size-512000000))
 
     raid = machine.raids.create(
         name="md0",
