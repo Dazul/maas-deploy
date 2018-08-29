@@ -111,6 +111,9 @@ def configure_network(machine, client, net_bonding=None):
             if interface.name in net_bonding['slaves']:
                 parents.append(interface)
 
+        for parent in parents:
+            parent.disconnect()
+
         bond = machine.interfaces.create(
             name=net_bonding['name'],
             interface_type=maas.client.enum.InterfaceType.BOND,
