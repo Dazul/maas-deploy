@@ -101,6 +101,16 @@ def get_subnet(client, subnet_name):
         if subnet.name == subnet_name:
             return subnet
 
+def get_fabric(client, fabric_name):
+    for fabric in client.fabrics.list():
+        if fabric.name == fabric_name:
+            return fabric
+
+def get_subnet(client, subnet_name):
+    for subnet in client.subnets.list():
+        if subnet.name == subnet_name:
+            return subnet
+
 def configure_network(machine, client, net_bonding=None):
     machine.boot_interface.links[0].delete()
     machine.boot_interface.links.create(mode=maas.client.enum.LinkMode.DHCP)
@@ -124,25 +134,30 @@ def configure_network(machine, client, net_bonding=None):
         )
 
         if 'vlans' in net_bonding:
-            fabric = client.fabrics.get_default()
+            fabric = get_fabric(client, net_bonding['fabric'])
             VLANS = dict((vlan.name, vlan) for vlan in fabric.vlans)
             bond.vlan = fabric.vlans.get_default()
             bond.save()
 
-            fabric = client.fabrics.get_default()
             VLANS = dict((vlan.name, vlan) for vlan in fabric.vlans)
-            for vlan, vid in net_bonding['vlans'].items():
+            for vname, vdata in net_bonding['vlans'].items():
                 vif = machine.interfaces.create(
-                    name="bond0.%d" % vid,
+                    name="bond0.%d" % vdata['vlan'],
                     interface_type=maas.client.enum.InterfaceType.VLAN,
                     parent=bond,
-                    vlan=VLANS[str(vid)]
+                    vlan=VLANS[str(vdata['vlan'])]
                 )
 
-                machine.interfaces.create(
-                    name="br-%s" % vlan,
+                iface = machine.interfaces.create(
+                    name="br-%s" % vname,
                     interface_type=maas.client.enum.InterfaceType.BRIDGE,
                     parent=vif
+                )
+
+                iface.links.create(
+                    mode=maas.client.enum.LinkMode.STATIC,
+                    subnet=get_subnet(client, vdata['subnet']),
+                    ip_address=vdata['ip']
                 )
 
     machine.refresh()
