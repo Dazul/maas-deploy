@@ -67,7 +67,7 @@ def define_os_disks(machine, os_raid=None, os_partitions=None):
 
 def configure_system_disks(machine, os_raid=None, os_partitions=None):
     disks = define_os_disks(machine, os_raid)
-
+    disks[0].set_as_boot_disk()
     partitions = []
     for disk in disks:
         # Align partition on 4 MiB blocks
