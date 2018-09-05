@@ -111,9 +111,11 @@ def get_subnet(client, subnet_name):
         if subnet.name == subnet_name:
             return subnet
 
-def configure_network(machine, client, net_bonding=None):
+def configure_network(machine, client, net_bonding=None, admin_net=None):
     machine.boot_interface.links[0].delete()
-    machine.boot_interface.links.create(mode=maas.client.enum.LinkMode.DHCP)
+
+    if admin_net is not None and admin_net:
+        machine.boot_interface.links.create(mode=maas.client.enum.LinkMode.DHCP)
 
     if net_bonding is not None:
         parents = []
@@ -215,7 +217,9 @@ def parse_config(host_config):
     os_raid = get_item_configs('os_raid1', host_config, template)
     os_partitions = get_item_configs('os_partitions', host_config, template)
     distro_name = get_item_configs('os', host_config, template)
-    return net_bonding, os_raid, os_partitions, distro_name, host_config, template
+    kernel_version = get_item_configs('kernel', host_config, template)
+    admin_net = get_item_configs('admin_net', host_config, template)
+    return net_bonding, os_raid, os_partitions, distro_name, host_config, template, kernel_version, admin_net
 
 def run_machine(hostname, yaml_config, client):
     for machine in client.machines.list():
@@ -236,14 +240,16 @@ def run_machine(hostname, yaml_config, client):
     distro_name = config_items[3]
     host_config = config_items[4]
     template = config_items[5]
+    kernel_version = config_items[6]
+    admin_net = config_items[7]
 
     cleanup_machine(machine)
-    configure_network(machine, client, net_bonding)
+    configure_network(machine, client, net_bonding, admin_net)
     configure_system_disks(machine, os_raid, os_partitions)
 
     machine.refresh()
     user_data = build_user_data(machine, host_config, template)
-    machine.deploy(distro_series=distro_name, user_data=user_data)
+    machine.deploy(distro_series=distro_name, user_data=user_data, hwe_kernel=kernel_version)
     print("Machine %s is now in %s state." % (hostname, machine.status._name_ ))
 
 
