@@ -144,7 +144,7 @@ def configure_network(machine, client, net_bonding=None, admin_net=None):
             VLANS = dict((vlan.name, vlan) for vlan in fabric.vlans)
             for vname, vdata in net_bonding['vlans'].items():
                 vif = machine.interfaces.create(
-                    name="bond0.%d" % vdata['vlan'],
+                    name="bond0.%s" % vdata['vlan'],
                     interface_type=maas.client.enum.InterfaceType.VLAN,
                     parent=bond,
                     vlan=VLANS[str(vdata['vlan'])]
