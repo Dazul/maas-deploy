@@ -156,10 +156,15 @@ def configure_network(machine, client, net_bonding=None, admin_net=None):
                     parent=vif
                 )
 
+                default_gateway=False
+                if 'default_gateway' in vdata:
+                    default_gateway=True
+
                 iface.links.create(
                     mode=maas.client.enum.LinkMode.STATIC,
                     subnet=get_subnet(client, vdata['subnet']),
-                    ip_address=vdata['ip']
+                    ip_address=vdata['ip'],
+                    default_gateway=default_gateway
                 )
 
     machine.refresh()
