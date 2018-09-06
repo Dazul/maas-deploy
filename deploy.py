@@ -112,7 +112,8 @@ def get_subnet(client, subnet_name):
             return subnet
 
 def configure_network(machine, client, net_bonding=None, admin_net=None):
-    machine.boot_interface.links[0].delete()
+    if len(machine.boot_interface.links) > 0:
+        machine.boot_interface.links[0].delete()
 
     if admin_net is not None and admin_net:
         machine.boot_interface.links.create(mode=maas.client.enum.LinkMode.DHCP)
