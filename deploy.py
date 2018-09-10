@@ -117,6 +117,8 @@ def configure_network(machine, client, net_bonding=None, admin_net=None):
 
     if admin_net is not None and admin_net:
         machine.boot_interface.links.create(mode=maas.client.enum.LinkMode.DHCP)
+    else:
+        machine.boot_interface.disconnect()
 
     if net_bonding is not None:
         parents = []
