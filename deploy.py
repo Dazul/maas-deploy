@@ -11,6 +11,8 @@ def cleanup_machine(machine):
     for interface in machine.interfaces:
         if interface.type == maas.client.enum.InterfaceType.BOND:
             interface.delete()
+        elif interface.type == maas.client.enum.InterfaceType.PHYSICAL:
+            interface.disconnect()
 
     for vg in machine.volume_groups:
         vg.delete()
