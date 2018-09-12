@@ -148,29 +148,36 @@ def configure_network(machine, client, net_bonding=None, admin_net=None):
 
             VLANS = dict((vlan.name, vlan) for vlan in fabric.vlans)
             for vname, vdata in net_bonding['vlans'].items():
-                vif = machine.interfaces.create(
-                    name="bond0.%s" % vdata['vlan'],
-                    interface_type=maas.client.enum.InterfaceType.VLAN,
-                    parent=bond,
-                    vlan=VLANS[str(vdata['vlan'])]
-                )
+                if 'subnet' in vdata:
+                    vif = machine.interfaces.create(
+                        name="bond0.%s" % vdata['vlan'],
+                        interface_type=maas.client.enum.InterfaceType.VLAN,
+                        parent=bond,
+                        vlan=VLANS[str(vdata['vlan'])]
+                    )
 
-                iface = machine.interfaces.create(
-                    name="br-%s" % vname,
-                    interface_type=maas.client.enum.InterfaceType.BRIDGE,
-                    parent=vif
-                )
+                    iface = machine.interfaces.create(
+                        name="br-%s" % vname,
+                        interface_type=maas.client.enum.InterfaceType.BRIDGE,
+                        parent=vif
+                    )
 
-                default_gateway=False
-                if 'default_gateway' in vdata:
-                    default_gateway=True
+                    default_gateway=False
+                    if 'default_gateway' in vdata:
+                        default_gateway=True
 
-                iface.links.create(
-                    mode=maas.client.enum.LinkMode.STATIC,
-                    subnet=get_subnet(client, vdata['subnet']),
-                    ip_address=vdata['ip'],
-                    default_gateway=default_gateway
-                )
+                    iface.links.create(
+                        mode=maas.client.enum.LinkMode.STATIC,
+                        subnet=get_subnet(client, vdata['subnet']),
+                        ip_address=vdata['ip'],
+                        default_gateway=default_gateway
+                    )
+                else:
+                    iface = machine.interfaces.create(
+                        name="br-%s" % vname,
+                        interface_type=maas.client.enum.InterfaceType.BRIDGE,
+                        parent=bond,
+                    )
 
     machine.refresh()
 
