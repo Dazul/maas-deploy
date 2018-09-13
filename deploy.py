@@ -198,6 +198,17 @@ def get_item_configs(key, host_config, template):
         item = template[key]
     return item
 
+def set_unused_disks(machine, user_data, unused_disks):
+    unused = ["/dev/" + device.name for device in machine.block_devices
+              if device.used_for == "Unused"]
+    bootcmd = unused_disks['disk_array']
+    bootcmd.extend(unused)
+    user_data.update({"bootcmd": [bootcmd]})
+    if 'step2' in unused_disks:
+        step2 = unused_disks['step2']
+        user_data['bootcmd'].append(step2)
+
+
 def build_user_data(machine, host_config, template):
     user_data = {}
 
@@ -214,17 +225,9 @@ def build_user_data(machine, host_config, template):
                             'sources': template['sources']}
 
     if 'unused_disks' in host_config:
-        unused = ["/dev/" + device.name for device in machine.block_devices
-                  if device.used_for == "Unused"]
-        bootcmd = host_config['unused_disks']['bootcmd']
-        bootcmd.extend(unused)
-        user_data.update({"bootcmd": [bootcmd]})
+        set_unused_disks(machine, user_data, host_config['unused_disks'])
     elif 'unused_disks' in template:
-        unused = ["/dev/" + device.name for device in machine.block_devices
-                  if device.used_for == "Unused"]
-        bootcmd = template['unused_disks']['bootcmd']
-        bootcmd.extend(unused)
-        user_data.update({"bootcmd": [bootcmd]})
+        set_unused_disks(machine, user_data, template['unused_disks'])
 
     user_data = b"#cloud-config\n" + yaml.dump(user_data).encode("utf-8")
     return user_data
