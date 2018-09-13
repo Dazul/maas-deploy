@@ -3,6 +3,7 @@
 import maas.client
 import os
 import sys
+import argparse
 import yaml
 
 BLOCK_SIZE = 4*1024**2
@@ -269,18 +270,43 @@ def run_machine(hostname, yaml_config, client):
     machine.deploy(distro_series=distro_name, user_data=user_data, hwe_kernel=kernel_version)
     print("Machine %s is now in %s state." % (hostname, machine.status._name_ ))
 
+def release_machine(hostname, client):
+    for machine in client.machines.list():
+        if machine.hostname == hostname:
+            break
+    print("Releasing %s" % hostname)
+    machine.release()
+
+
 
 def main():
 
-    yaml_config = yaml.load(open(sys.argv[1]))
+    parser = argparse.ArgumentParser(description='Configure and deploy machines present in MaaS.')
+    parser.add_argument("machines_config", help="List of the machines with their configuration")
+    parser.add_argument("-r", "--release", help="Release all machines on the list", action="store_true")
+    args = parser.parse_args()
+
+    yaml_config = yaml.load(open(args.machines_config))
 
     client = maas.client.connect(
         os.getenv("MAAS_API_URL"),
         apikey=os.getenv("MAAS_API_KEY")
     )
 
-    for hostname in yaml_config:
-        run_machine(hostname, yaml_config[hostname], client)
+    if args.release:
+        print("Are you sure you want release " + str(list(yaml_config.keys()))+"?")
+        print("You are running this command on " + os.getenv("MAAS_API_URL"))
+        print("Type 'I am sure I want this!' all in upper case to continue.")
+        msg = sys.stdin.readline()
+#        if msg == 'I AM SURE I WANT THIS!\n':
+        if True:
+            for hostname in yaml_config:
+                release_machine(hostname, client)
+        else:
+            print("Confirmation failed.")
+    else:
+        for hostname in yaml_config:
+            run_machine(hostname, yaml_config[hostname], client)
 
 if __name__ == "__main__":
     main()
