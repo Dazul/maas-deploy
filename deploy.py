@@ -114,14 +114,45 @@ def get_subnet(client, subnet_name):
         if subnet.name == subnet_name:
             return subnet
 
-def configure_network(machine, client, net_bonding=None, admin_net=None):
+def configure_vlans(machine, client, vname, vdata, bond, VLANS, default_gateway):
+    if 'subnet' in vdata:
+        vif = machine.interfaces.create(
+            name="bond0.%s" % vdata['vlan'],
+            interface_type=maas.client.enum.InterfaceType.VLAN,
+            parent=bond,
+            vlan=VLANS[str(vdata['vlan'])]
+        )
+
+        iface = machine.interfaces.create(
+            name="br-%s" % vname,
+            interface_type=maas.client.enum.InterfaceType.BRIDGE,
+            parent=vif
+        )
+
+        if 'ip' in vdata:
+            iface.links.create(
+                mode=maas.client.enum.LinkMode.STATIC,
+                subnet=get_subnet(client, vdata['subnet']),
+                ip_address=vdata['ip'],
+                default_gateway=default_gateway
+            )
+    else:
+        iface = machine.interfaces.create(
+            name="br-%s" % vname,
+            interface_type=maas.client.enum.InterfaceType.BRIDGE,
+            parent=bond,
+        )
+
+def configure_network(machine, client, net_bonding=None, admin_net='None'):
+    if admin_net is None:
+        admin_net = "None"
+
     if len(machine.boot_interface.links) > 0:
         machine.boot_interface.links[0].delete()
 
-    if admin_net is not None and admin_net:
-        machine.boot_interface.links.create(mode=maas.client.enum.LinkMode.DHCP)
-    else:
-        machine.boot_interface.disconnect()
+    if admin_net != 'None':
+        def_sub = get_subnet(client, admin_net)
+        machine.boot_interface.links.create(mode=maas.client.enum.LinkMode.DHCP, subnet=def_sub)
 
     if net_bonding is not None:
         parents = []
@@ -149,36 +180,12 @@ def configure_network(machine, client, net_bonding=None, admin_net=None):
 
             VLANS = dict((vlan.name, vlan) for vlan in fabric.vlans)
             for vname, vdata in net_bonding['vlans'].items():
-                if 'subnet' in vdata:
-                    vif = machine.interfaces.create(
-                        name="bond0.%s" % vdata['vlan'],
-                        interface_type=maas.client.enum.InterfaceType.VLAN,
-                        parent=bond,
-                        vlan=VLANS[str(vdata['vlan'])]
-                    )
-
-                    iface = machine.interfaces.create(
-                        name="br-%s" % vname,
-                        interface_type=maas.client.enum.InterfaceType.BRIDGE,
-                        parent=vif
-                    )
-
-                    default_gateway=False
-                    if 'default_gateway' in vdata:
-                        default_gateway=True
-
-                    iface.links.create(
-                        mode=maas.client.enum.LinkMode.STATIC,
-                        subnet=get_subnet(client, vdata['subnet']),
-                        ip_address=vdata['ip'],
-                        default_gateway=default_gateway
-                    )
-                else:
-                    iface = machine.interfaces.create(
-                        name="br-%s" % vname,
-                        interface_type=maas.client.enum.InterfaceType.BRIDGE,
-                        parent=bond,
-                    )
+                if 'default_gateway' in vdata:
+                    configure_vlans(machine, client, vname, vdata, bond, VLANS, True)
+                    break
+            for vname, vdata in net_bonding['vlans'].items():
+                if 'default_gateway' not in vdata:
+                    configure_vlans(machine, client, vname, vdata, bond, VLANS, False)
 
     machine.refresh()
 
