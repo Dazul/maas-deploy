@@ -190,14 +190,6 @@ def configure_network(machine, client, net_bonding=None, admin_net='None'):
     machine.refresh()
 
 
-def get_item_configs(key, host_config, template):
-    item = None
-    if key in host_config:
-        item = host_config[key]
-    elif key in template:
-        item = template[key]
-    return item
-
 def set_unused_disks(machine, user_data, unused_disks):
     unused = ["/dev/" + device.name for device in machine.block_devices
               if device.used_for == "Unused"]
@@ -207,7 +199,6 @@ def set_unused_disks(machine, user_data, unused_disks):
     if 'step2' in unused_disks:
         step2 = unused_disks['step2']
         user_data['bootcmd'].append(step2)
-
 
 def build_user_data(machine, host_config, template):
     user_data = {}
@@ -231,6 +222,14 @@ def build_user_data(machine, host_config, template):
 
     user_data = b"#cloud-config\n" + yaml.dump(user_data).encode("utf-8")
     return user_data
+
+def get_item_configs(key, host_config, template):
+    item = None
+    if key in host_config:
+        item = host_config[key]
+    elif key in template:
+        item = template[key]
+    return item
 
 def parse_config(host_config):
     if host_config is None:
