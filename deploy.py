@@ -190,15 +190,28 @@ def configure_network(machine, client, net_bonding=None, admin_net='None'):
     machine.refresh()
 
 
+def configure_jbod_disks(machine, jbod_conf):
+    for disk_conf in jbod_conf:
+        for disk in machine.block_devices:
+            if disk.name == disk_conf['device']:
+                break
+        part = disk.partitions.create(disk.available_size - 512000000)
+        part.format(disk_conf['fs'])
+        part.mount(disk_conf['mountpoint'])
+        machine.refresh()
+
 def set_unused_disks(machine, user_data, unused_disks):
-    unused = ["/dev/" + device.name for device in machine.block_devices
-              if device.used_for == "Unused"]
-    bootcmd = unused_disks['disk_array']
-    bootcmd.extend(unused)
-    user_data.update({"bootcmd": [bootcmd]})
-    if 'step2' in unused_disks:
-        step2 = unused_disks['step2']
-        user_data['bootcmd'].append(step2)
+    if 'jbod_disks' in unused_disks:
+        configure_jbod_disks(machine, unused_disks['jbod_disks'])
+    else:
+        unused = ["/dev/" + device.name for device in machine.block_devices
+                  if device.used_for == "Unused"]
+        bootcmd = unused_disks['disk_array']
+        bootcmd.extend(unused)
+        user_data.update({"bootcmd": [bootcmd]})
+        if 'step2' in unused_disks:
+            step2 = unused_disks['step2']
+            user_data['bootcmd'].append(step2)
 
 def build_user_data(machine, host_config, template):
     user_data = {}
