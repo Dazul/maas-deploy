@@ -114,7 +114,7 @@ def get_subnet(client, subnet_name):
         if subnet.name == subnet_name:
             return subnet
 
-def configure_vlans(machine, client, vname, vdata, bond, VLANS, default_gateway):
+def configure_vlans(machine, client, vname, vdata, bond, VLANS, default_gateway, mtu=1050):
     if 'subnet' in vdata:
         vif = machine.interfaces.create(
             name="bond0.%s" % vdata['vlan'],
@@ -126,7 +126,8 @@ def configure_vlans(machine, client, vname, vdata, bond, VLANS, default_gateway)
         iface = machine.interfaces.create(
             name="br-%s" % vname,
             interface_type=maas.client.enum.InterfaceType.BRIDGE,
-            parent=vif
+            parent=vif,
+            mtu=mtu
         )
 
         if 'ip' in vdata:
@@ -141,6 +142,7 @@ def configure_vlans(machine, client, vname, vdata, bond, VLANS, default_gateway)
             name="br-%s" % vname,
             interface_type=maas.client.enum.InterfaceType.BRIDGE,
             parent=bond,
+            mtu=mtu
         )
 
 def configure_network(machine, client, net_bonding=None, admin_net='None'):
@@ -181,11 +183,13 @@ def configure_network(machine, client, net_bonding=None, admin_net='None'):
             VLANS = dict((vlan.name, vlan) for vlan in fabric.vlans)
             for vname, vdata in net_bonding['vlans'].items():
                 if 'default_gateway' in vdata:
-                    configure_vlans(machine, client, vname, vdata, bond, VLANS, True)
+                    mtu = 1050 if 'mtu' not in vdata else vdata['mtu']
+                    configure_vlans(machine, client, vname, vdata, bond, VLANS, True, mtu)
                     break
             for vname, vdata in net_bonding['vlans'].items():
                 if 'default_gateway' not in vdata:
-                    configure_vlans(machine, client, vname, vdata, bond, VLANS, False)
+                    mtu = 1050 if 'mtu' not in vdata else vdata['mtu']
+                    configure_vlans(machine, client, vname, vdata, bond, VLANS, False, mtu)
 
     machine.refresh()
 
