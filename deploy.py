@@ -207,7 +207,7 @@ def configure_jbod_disks(machine, jbod_conf):
 def set_unused_disks(machine, user_data, unused_disks):
     if 'jbod_disks' in unused_disks:
         configure_jbod_disks(machine, unused_disks['jbod_disks'])
-    else:
+    if 'disk_array' in unused_disks:
         unused = ["/dev/" + device.name for device in machine.block_devices
                   if device.used_for == "Unused"]
         bootcmd = unused_disks['disk_array']
