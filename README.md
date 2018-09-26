@@ -93,7 +93,9 @@ os_partitions:
 net_bounding
 ------------
 
-Net bounding has 3 parameters, two mandatory and one optional. Mandatory ones are slaves, which contains the network interface for the bond, and name, which will be the bond interface name. You can attach vlans to the bound. The vlans numbers specified need to exist on MaaS.
+Net bounding has 3 parameters, two mandatory and one optional. Mandatory ones are slaves, which contains the network interface for the bond, and name, which will be the bond interface name.
+You can attach vlans to the bound. The vlans numbers specified need to exist on MaaS.
+For each vlan, you need to tell the name of the vlan as it exists on MaaS. All the others options are optional. But subnet need to exist on MaaS, and the IP need to exist on the particular subnet. default_gateway will ensure that the configuration attach to it will be the first to be configured.
 Bond parameters are hard coded yet to `bond_mode="802.3ad"`, `bond_lacp_rate="fast"`, `bond_xmit_hash_policy="layer3+4"`.
 
 ```yaml
@@ -103,8 +105,14 @@ net_bonding:
         - enp4s0f1
     name: bond0
     vlans:
-        br-mgmt: 2126
-        br-storage: 2128
+        mgmt:
+            vlan: mgmt
+            subnet: rack2:mgmt
+            ip: 192.0.2.50
+            default_gateway: true
+            mtu: 9050
+        vxlan:
+            vlan: vxlan
 ```
 
 packages
@@ -139,11 +147,22 @@ template: lab.yaml
 unused_disks
 ------------
 
-If you want to prepare the disks that are not used in maas, you can use a bootcmd. You can use the `cloud-init-per once` where each parameter is a value on a list on the yaml.
+You can configure the non-os disks in two ways. As jbod_disks or as an disk_array.
+For jbod_disks you need to provide the device, filesystem and mointpoint.
+For disk_array you need to provide the array for cloud-init command, for example creating a raid. You can add a step2 to it if you want to create a volume group on the raid.
+
+Note that jbod_disks will always be evaluated befor disk_array, and disk_array will apply on all disks that have neither be used on jbod_disks nor os_raid1.
 
 ```yaml
 unused_disks:
-    bootcmd:
+	jbod_disks:
+        - device: /dev/sdc
+          fs: ext4
+          mountpoint: /data/01
+        - device: /dev/sdd
+          fs: ext4
+          mountpoint: /data/02
+    disk_array:
          - cloud-init-per
          - once
          - softraid
@@ -152,4 +171,11 @@ unused_disks:
          - /dev/md1
          - --level=6
          - --raid-devices=4
+    step2:
+        - cloud-init-per
+        - once
+        - b_volume-group
+        - vgcreate
+        - lxc
+        - /dev/md1
 ```
