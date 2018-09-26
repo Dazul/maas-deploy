@@ -30,8 +30,14 @@ net_bonding:
         - enp4s0f1
     name: bond0
     vlans:
-        br-mgmt: 2126
-        br-storage: 2128
+        mgmt:
+            vlan: mgmt
+            subnet: rack2:mgmt
+            ip: 192.0.2.50
+            default_gateway: true
+            mtu: 9050
+        vxlan:
+            vlan: vxlan
 
 packages:
     - salt-minion
@@ -41,7 +47,14 @@ sources:
         keyid: 754A1A7AE731F165D5E6D4BD0E08A149DE57BFBE
 
 unused_disks:
-    bootcmd:
+    jbod_disks:
+        - device: /dev/sdc
+          fs: ext4
+          mountpoint: /data/01
+        - device: /dev/sdd
+          fs: ext4
+          mountpoint: /data/02
+    disk_array:
          - cloud-init-per
          - once
          - softraid
@@ -50,8 +63,10 @@ unused_disks:
          - /dev/md1
          - --level=6
          - --raid-devices=4
-#        - cloud-init-per
-#        - once
-#        - volume-group
-#        - vgcreate
-#        - lxc
+    step2:
+        - cloud-init-per
+        - once
+        - b_volume-group
+        - vgcreate
+        - lxc
+        - /dev/md1
