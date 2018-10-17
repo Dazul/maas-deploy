@@ -149,9 +149,9 @@ unused_disks
 
 You can configure the non-os disks in two ways. As jbod_disks or as an disk_array.
 For jbod_disks you need to provide the device, filesystem and mointpoint.
-For disk_array you need to provide the array for cloud-init command, for example creating a raid. You can add a step2 to it if you want to create a volume group on the raid.
+For disk_array you need to provide the array for cloud-init command, for example creating a raid. You can add a step2 to it if you want to create a volume group on the raid. For raid array that need a mount point, you can configure it with raid_array. Only Raid6 is supported yet.
 
-Note that jbod_disks will always be evaluated befor disk_array, and disk_array will apply on all disks that have neither be used on jbod_disks nor os_raid1.
+Note that jbod_disks and raid_array will always be evaluated befor disk_array, and disk_array will apply on all disks that have neither be used on jbod_disks, raid_array nor os_raid1.
 
 ```yaml
 unused_disks:
@@ -162,6 +162,14 @@ unused_disks:
         - device: /dev/sdd
           fs: ext4
           mountpoint: /data/02
+    raid_array:
+        disks:
+            - sdc
+            - sdd
+            - sde
+            - sdf
+        fs: ext4
+        mountpoint: /media/raid6_data
     disk_array:
          - cloud-init-per
          - once

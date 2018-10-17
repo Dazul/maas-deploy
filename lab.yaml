@@ -5,7 +5,7 @@ os: bionic
 os_raid1:
     disks:
         - sda
-        - sdc
+        - sdb
 
 os_partitions:
     /var:
@@ -54,6 +54,16 @@ unused_disks:
         - device: /dev/sdd
           fs: ext4
           mountpoint: /data/02
+    raid_array:
+        disks:
+            - sde
+            - sdf
+            - sdg
+            - sdh
+            - sdi
+            - sdj
+        fs: ext4
+        mountpoint: /data/raid_data
     disk_array:
          - cloud-init-per
          - once
