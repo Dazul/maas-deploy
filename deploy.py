@@ -204,9 +204,31 @@ def configure_jbod_disks(machine, jbod_conf):
         part.mount(disk_conf['mountpoint'])
         machine.refresh()
 
+
+def configure_raid_array(machine, raid_array):
+    partitions = []
+    for disk in machine.block_devices:
+        if disk.name in raid_array['disks']:
+            part = disk.partitions.create(disk.available_size - 512000000)
+            partitions.append(part)
+
+    raid = machine.raids.create(
+        name="md1",
+        level=maas.client.enum.RaidLevel.RAID_6,
+        devices=partitions,
+        spare_devices=[]
+    )
+
+    raid.virtual_device.format(raid_array['fs'])
+    raid.virtual_device.mount(raid_array['mountpoint'])
+
+    machine.refresh()
+
 def set_unused_disks(machine, user_data, unused_disks):
     if 'jbod_disks' in unused_disks:
         configure_jbod_disks(machine, unused_disks['jbod_disks'])
+    if 'raid_array' in unused_disks:
+        configure_raid_array(machine, unused_disks['raid_array'])
     if 'disk_array' in unused_disks:
         unused = ["/dev/" + device.name for device in machine.block_devices
                   if device.used_for == "Unused"]
