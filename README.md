@@ -34,6 +34,7 @@ Then, various items can be defined:
 * os
 * os_raid1
 * os_partitions
+* kernel
 * admin_net
 * net_bonding
 * packages
@@ -92,10 +93,23 @@ os_partitions:
         filesystem: ext4
 ```
 
+kernel
+------
+
+If you need to use a diferent kernel as the one used by default, for example the hwe one, you can use this option to set it.
+
+```yaml
+kernel: hwe-16.04
+```
+
 admin_net
 ---------
 
 You can configure the subnet for the admin_net. This subnet will be configured on the interface where the machine boot with PXE. MaaS will configure the interface with DHCP. If you want not to use, you can set None. Make sure that the machine can reach the MaaS server with other interfaces if you omit admin_net config or set it to None.
+
+```yaml
+admin_net: rack1:admin
+```
 
 net_bounding
 ------------
