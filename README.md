@@ -34,10 +34,12 @@ Then, various items can be defined:
 * os
 * os_raid1
 * os_partitions
+* admin_net
 * net_bonding
 * packages
 * sources
 * template
+* unused_disks
 
 Each item, except the template item, can be defined into a template file. If an item is defined in the template and in the machine file, the version in the machine file will override the template one. If no item is define, maas default values will be applied.
 
@@ -89,6 +91,11 @@ os_partitions:
         size: 19G
         filesystem: ext4
 ```
+
+admin_net
+---------
+
+You can configure the subnet for the admin_net. This subnet will be configured on the interface where the machine boot with PXE. MaaS will configure the interface with DHCP. If you want not to use, you can set None. Make sure that the machine can reach the MaaS server with other interfaces if you omit admin_net config or set it to None.
 
 net_bounding
 ------------
