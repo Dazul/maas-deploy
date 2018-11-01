@@ -362,8 +362,7 @@ def main():
         print("You are running this command on " + os.getenv("MAAS_API_URL"))
         print("Type 'I am sure I want this!' all in upper case to continue.")
         msg = sys.stdin.readline()
-#        if msg == 'I AM SURE I WANT THIS!\n':
-        if True:
+        if msg == 'I AM SURE I WANT THIS!\n':
             for hostname in yaml_config:
                 release_machine(hostname, client)
         else:
