@@ -258,17 +258,10 @@ def set_unused_disks(machine, user_data, unused_disks):
 def build_user_data(machine, host_config, template):
     user_data = {}
 
-    if 'packages' in host_config:
-        user_data['packages'] = host_config['packages']
-    elif 'packages' in template:
-        user_data['packages'] = template['packages']
-
-    if 'sources' in host_config:
-        user_data['apt'] = {'preserve_sources_list': True,
-                            'sources': host_config['sources']}
-    elif 'sources' in template:
-        user_data['apt'] = {'preserve_sources_list': True,
-                            'sources': template['sources']}
+    if 'user_data' in host_config:
+        user_data = host_config['user_data']
+    elif 'user_data' in template:
+        user_data = host_config['user_data']
 
     if 'unused_disks' in host_config:
         set_unused_disks(machine, user_data, host_config['unused_disks'])
