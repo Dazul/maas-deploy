@@ -190,22 +190,24 @@ def configure_network(machine, client, net_bonding=None, admin_net='None'):
             bond_xmit_hash_policy="layer3+4"
         )
 
-        if 'vlans' in net_bonding:
-            fabric = get_fabric(client, net_bonding['fabric'])
+                if 'vlans' in net_bonding:
+                    fabric = get_fabric(client, net_bonding['fabric'])
             VLANS = dict((vlan.name, vlan) for vlan in fabric.vlans)
             bond.vlan = fabric.vlans.get_default()
             bond.save()
 
             VLANS = dict((vlan.name, vlan) for vlan in fabric.vlans)
             for vname, vdata in net_bonding['vlans'].items():
-                if 'default_gateway' in vdata:
+                if 'default_dns' in vdata and vdata['default_dns']:
                     mtu = 1050 if 'mtu' not in vdata else vdata['mtu']
-                    configure_vlans(machine, client, vname, vdata, bond, VLANS, True, mtu)
+                    default_gateway = False if 'default_gateway' not in vdata else vdata['default_gateway']
+                    configure_vlans(machine, client, vname, vdata, bond, VLANS, default_gateway, mtu)
                     break
             for vname, vdata in net_bonding['vlans'].items():
-                if 'default_gateway' not in vdata:
+                if 'default_dns' not in vdata:
                     mtu = 1050 if 'mtu' not in vdata else vdata['mtu']
-                    configure_vlans(machine, client, vname, vdata, bond, VLANS, False, mtu)
+                    default_gateway = False if 'default_gateway' not in vdata else vdata['default_gateway']
+                    configure_vlans(machine, client, vname, vdata, bond, VLANS, default_gateway, mtu)
 
     machine.refresh()
 
@@ -261,7 +263,7 @@ def build_user_data(machine, host_config, template):
     if 'user_data' in host_config:
         user_data = host_config['user_data']
     elif 'user_data' in template:
-        user_data = host_config['user_data']
+        user_data = template['user_data']
 
     if 'unused_disks' in host_config:
         set_unused_disks(machine, user_data, host_config['unused_disks'])
