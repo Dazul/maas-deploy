@@ -190,8 +190,8 @@ def configure_network(machine, client, net_bonding=None, admin_net='None'):
             bond_xmit_hash_policy="layer3+4"
         )
 
-                if 'vlans' in net_bonding:
-                    fabric = get_fabric(client, net_bonding['fabric'])
+        if 'vlans' in net_bonding:
+            fabric = get_fabric(client, net_bonding['fabric'])
             VLANS = dict((vlan.name, vlan) for vlan in fabric.vlans)
             bond.vlan = fabric.vlans.get_default()
             bond.save()
@@ -257,46 +257,35 @@ def set_unused_disks(machine, user_data, unused_disks):
             step2 = unused_disks['step2']
             user_data['bootcmd'].append(step2)
 
-def build_user_data(machine, host_config, template):
+def build_user_data(machine, host_config):
     user_data = {}
 
     if 'user_data' in host_config:
         user_data = host_config['user_data']
-    elif 'user_data' in template:
-        user_data = template['user_data']
 
     if 'unused_disks' in host_config:
         set_unused_disks(machine, user_data, host_config['unused_disks'])
-    elif 'unused_disks' in template:
-        set_unused_disks(machine, user_data, template['unused_disks'])
 
     user_data = b"#cloud-config\n" + yaml.dump(user_data).encode("utf-8")
     return user_data
 
-def get_item_configs(key, host_config, template):
+def get_item_configs(key, host_config):
     item = None
     if key in host_config:
         item = host_config[key]
-    elif key in template:
-        item = template[key]
     return item
 
 def parse_config(host_config):
     if host_config is None:
         host_config = {}
 
-    if 'template' in host_config:
-        template = yaml.load(open(host_config['template']))
-    else:
-        template = {}
-
-    net_bonding = get_item_configs('net_bonding', host_config, template)
-    os_raid = get_item_configs('os_raid1', host_config, template)
-    os_partitions = get_item_configs('os_partitions', host_config, template)
-    distro_name = get_item_configs('os', host_config, template)
-    kernel_version = get_item_configs('kernel', host_config, template)
-    admin_net = get_item_configs('admin_net', host_config, template)
-    return net_bonding, os_raid, os_partitions, distro_name, host_config, template, kernel_version, admin_net
+    net_bonding = get_item_configs('net_bonding', host_config)
+    os_raid = get_item_configs('os_raid1', host_config)
+    os_partitions = get_item_configs('os_partitions', host_config)
+    distro_name = get_item_configs('os', host_config)
+    kernel_version = get_item_configs('kernel', host_config)
+    admin_net = get_item_configs('admin_net', host_config)
+    return net_bonding, os_raid, os_partitions, distro_name, host_config, kernel_version, admin_net
 
 def run_machine(hostname, yaml_config, client):
     for machine in client.machines.list():
@@ -316,16 +305,15 @@ def run_machine(hostname, yaml_config, client):
     os_partitions = config_items[2]
     distro_name = config_items[3]
     host_config = config_items[4]
-    template = config_items[5]
-    kernel_version = config_items[6]
-    admin_net = config_items[7]
+    kernel_version = config_items[5]
+    admin_net = config_items[6]
 
     cleanup_machine(machine)
     configure_network(machine, client, net_bonding, admin_net)
     configure_system_disks(machine, os_raid, os_partitions)
 
     machine.refresh()
-    user_data = build_user_data(machine, host_config, template)
+    user_data = build_user_data(machine, host_config)
     machine.deploy(distro_series=distro_name, user_data=user_data, hwe_kernel=kernel_version)
     print("Machine %s is now in %s state." % (hostname, machine.status._name_ ))
 
