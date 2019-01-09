@@ -181,8 +181,13 @@ def configure_network(machine, client, net_bonding=None, admin_net='None'):
         for parent in parents:
             parent.disconnect()
 
+        # Workarroung for Match bug in systemd, by overriding the mac
+        # https://bugs.launchpad.net/netplan/+bug/1804861
+        mac_address = '52:54:'+parents[0].mac_address[6:]
+
         bond = machine.interfaces.create(
             name=net_bonding['name'],
+            mac_address=mac_address,
             interface_type=maas.client.enum.InterfaceType.BOND,
             parents=parents,
             bond_mode="802.3ad",
