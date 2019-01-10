@@ -351,13 +351,13 @@ def main():
         print("Type 'I am sure I want this!' all in upper case to continue.")
         msg = sys.stdin.readline()
         if msg == 'I AM SURE I WANT THIS!\n':
-            for hostname in yaml_config:
+            for hostname in yaml_config['machines']:
                 release_machine(hostname, client)
         else:
             print("Confirmation failed.")
     else:
-        for hostname in yaml_config:
-            run_machine(hostname, yaml_config[hostname], client)
+        for hostname in yaml_config['machines']:
+            run_machine(hostname, yaml_config['machines'][hostname], client)
 
 if __name__ == "__main__":
     main()

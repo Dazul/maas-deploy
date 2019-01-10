@@ -1,0 +1,126 @@
+---
+shared: &shared
+    os: bionic
+
+    os_raid1:
+        disks:
+            - sda
+            - sdb
+
+    os_partitions:
+        /var:
+            size: 20G
+            filesystem: ext4
+        /tmp:
+            size: 20G
+            filesystem: btrfs
+        /boot:
+            size: 1G
+            filesystem: ext4
+        /:
+            size: 59G
+            filesystem: xfs
+        /home:
+            size: 19G
+            filesystem: ext4
+
+    packages:
+        - salt-minion
+    sources:
+        saltstack:
+            source: deb http://repo.saltstack.com/apt/ubuntu/18.04/amd64/latest $RELEASE main
+            keyid: 754A1A7AE731F165D5E6D4BD0E08A149DE57BFBE
+
+    unused_disks:
+        jbod_disks:
+            - device: /dev/sdc
+              fs: ext4
+              mountpoint: /data/01
+            - device: /dev/sdd
+              fs: ext4
+              mountpoint: /data/02
+        raid_array:
+            disks:
+                - sde
+                - sdf
+                - sdg
+                - sdh
+                - sdi
+                - sdj
+            fs: ext4
+            mountpoint: /data/raid_data
+        disk_array:
+             - cloud-init-per
+             - once
+             - softraid
+             - mdadm
+             - --create
+             - /dev/md1
+             - --level=6
+             - --raid-devices=4
+        step2:
+            - cloud-init-per
+            - once
+            - b_volume-group
+            - vgcreate
+            - lxc
+            - /dev/md1
+
+shared: &mgmt_shared
+    vlan: mgmt
+    subnet: mgmt
+    mtu: 1500
+    default_dns: true
+    default_gateway: true
+
+storage_shared: &storage_shared
+    vlan: storage
+    subnet: storage
+    mtu: 9000
+
+machines:
+    machine1:
+        <<: *shared
+        net_bonding:
+        slaves:
+            - ens1f0
+            - ens1f1
+        name: bond0
+        fabric: osa
+        vlans:
+            mgmt:
+                <<: *mgmt_shared
+                ip: 198.51.100.2
+            storage:
+                <<: *storage_shared
+                ip: 203.0.113.2
+    machine2:
+        <<: *shared
+        net_bonding:
+        slaves:
+            - ens1f0
+            - ens1f1
+        name: bond0
+        fabric: osa
+        vlans:
+            mgmt:
+                <<: *mgmt_shared
+                ip: 198.51.100.3
+            storage:
+                <<: *storage_shared
+                ip: 203.0.113.3
+    machine3:
+        <<: *shared
+        net_bonding:
+        slaves:
+            - ens1f0
+            - ens1f1
+        name: bond0
+        fabric: osa
+        vlans:
+            mgmt:
+                <<: *mgmt_shared
+                ip: 198.51.100.4
+            storage:
+                <<: *storage_shared
+                ip: 203.0.113.4

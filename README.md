@@ -27,7 +27,7 @@ deploy.py my_fancy_machine.yaml
 Description File
 ================
 
-Each machine description starts always with the hostname of the machine. And everything else is child os that root item.
+Each machine description starts always with the hostname of the machine. And everything else is child os that root item. The machines are deplared under **machines**.
 
 Then, various items can be defined:
 
@@ -39,10 +39,8 @@ Then, various items can be defined:
 * net_bonding
 * packages
 * sources
-* template
 * unused_disks
 
-Each item, except the template item, can be defined into a template file. If an item is defined in the template and in the machine file, the version in the machine file will override the template one. If no item is define, maas default values will be applied.
 
 Items
 =====
@@ -156,13 +154,6 @@ sources:
     saltstack:
         source: deb http://repo.saltstack.com/apt/ubuntu/16.04/amd64/latest $RELEASE main
         keyid: 754A1A7AE731F165D5E6D4BD0E08A149DE57BFBE
-```
-
-template
---------
-
-```yaml
-template: lab.yaml
 ```
 
 unused_disks
