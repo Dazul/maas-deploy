@@ -6,7 +6,7 @@ Maas deploy is used to configure and deploy bare-metal machines. It uses in inpu
 Dependencies
 ------------
 
-maas-deploy used python 3 to run. And the only dependency it has is with MAAS Client Library & CLI (python-libmaas). You can intall it with pip. Just run:
+maas-deploy uses python 3 to run. And the only dependency it has is with MAAS Client Library & CLI (python-libmaas). You can intall it with pip. Just run:
 
 ```console
 pip install python-libmaas
