@@ -346,7 +346,7 @@ def main():
     )
 
     if args.release:
-        print("Are you sure you want release " + str(list(yaml_config.keys()))+"?")
+        print("Are you sure you want release " + str(list(yaml_config['machines'].keys()))+"?")
         print("You are running this command on " + os.getenv("MAAS_API_URL"))
         print("Type 'I am sure I want this!' all in upper case to continue.")
         msg = sys.stdin.readline()
