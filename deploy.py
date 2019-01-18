@@ -255,7 +255,7 @@ def set_unused_disks(machine, user_data, unused_disks):
     if 'disk_array' in unused_disks:
         unused = ["/dev/" + device.name for device in machine.block_devices
                   if device.used_for == "Unused"]
-        bootcmd = unused_disks['disk_array']
+        bootcmd = list(unused_disks['disk_array'])
         bootcmd.extend(unused)
         user_data.update({"bootcmd": [bootcmd]})
         if 'step2' in unused_disks:
