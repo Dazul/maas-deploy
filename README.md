@@ -1,7 +1,7 @@
 Maas-Deploy
 ===========
 
-Maas deploy is used to configure and deploy bare-metal machines. It uses in input a yaml file containing the description of the machine we want to deploy. Maas-deploy uses an OS env variable with your API key. The variable is named MAAS_API_KEY.
+Maas deploy is used to configure and deploy bare-metal machines using Canonical's [MAAS](https://maas.io/). It uses in input a yaml file containing the description of the machine we want to deploy. Maas-deploy uses an OS env variable with your API key. The variable is named MAAS_API_KEY.
 
 Dependencies
 ------------
