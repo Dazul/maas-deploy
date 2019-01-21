@@ -167,7 +167,7 @@ Note that jbod_disks and raid_array will always be evaluated befor disk_array, a
 
 ```yaml
 unused_disks:
-	jbod_disks:
+    jbod_disks:
         - device: /dev/sdc
           fs: ext4
           mountpoint: /data/01
