@@ -338,7 +338,7 @@ def main():
     parser.add_argument("-r", "--release", help="Release all machines on the list", action="store_true")
     args = parser.parse_args()
 
-    yaml_config = yaml.load(open(args.machines_config))
+    yaml_config = yaml.load(open(args.machines_config), Loader=yaml.FullLoader)
 
     client = maas.client.connect(
         os.getenv("MAAS_API_URL"),
