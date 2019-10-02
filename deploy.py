@@ -45,7 +45,7 @@ def cleanup_machine(machine):
 
     machine.refresh()
 
-def define_os_disks(machine, os_raid=None, os_partitions=None):
+def define_os_disks_raid1(machine, os_raid=None, os_partitions=None):
     os_disks = []
 
     # default disk discovery
@@ -84,8 +84,24 @@ def define_os_disks(machine, os_raid=None, os_partitions=None):
 
         return os_disks
 
-def configure_system_disks(machine, os_raid=None, os_partitions=None):
-    disks = define_os_disks(machine, os_raid)
+def configure_os_disks_raid6(machine, os_raid6, os_partitions=None):
+    os_disks = []
+    if 'disks' in os_raid6.keys():
+        for disk in machine.block_devices:
+            if disk.name in os_raid6['disks']:
+                os_disks.append(disk)
+    else:
+        print("Raid6 need to explicitly set the disks")
+        sys.exit(-1)
+    return os_disks
+
+def configure_system_disks(machine, os_raid1=None, os_raid6=None, os_partitions=None):
+    if os_raid6 is not None:
+        raid_type = 6
+        disks = configure_os_disks_raid6(machine, os_raid6, os_partitions)
+    else:
+        raid_type = 1
+        disks = define_os_disks_raid1(machine, os_raid1, os_partitions)
     disks[0].set_as_boot_disk()
     partitions = []
     for disk in disks:
@@ -97,12 +113,20 @@ def configure_system_disks(machine, os_raid=None, os_partitions=None):
         except:
             partitions.append(disk.partitions.create(size=size-512000000))
 
-    raid = machine.raids.create(
-        name="md0",
-        level=maas.client.enum.RaidLevel.RAID_1,
-        devices=partitions,
-        spare_devices=[],
-    )
+    if raid_type == 1:
+        raid = machine.raids.create(
+            name="md0",
+            level=maas.client.enum.RaidLevel.RAID_1,
+            devices=partitions,
+            spare_devices=[],
+        )
+    elif raid_type == 6:
+        raid = machine.raids.create(
+            name="md0",
+            level=maas.client.enum.RaidLevel.RAID_6,
+            devices=partitions,
+            spare_devices=[],
+        )
 
     if os_partitions is None:
         raid.virtual_device.format("ext4")
@@ -285,12 +309,13 @@ def parse_config(host_config):
         host_config = {}
 
     net_bonding = get_item_configs('net_bonding', host_config)
-    os_raid = get_item_configs('os_raid1', host_config)
+    os_raid1 = get_item_configs('os_raid1', host_config)
+    os_raid6 = get_item_configs('os_raid6', host_config)
     os_partitions = get_item_configs('os_partitions', host_config)
     distro_name = get_item_configs('os', host_config)
     kernel_version = get_item_configs('kernel', host_config)
     admin_net = get_item_configs('admin_net', host_config)
-    return net_bonding, os_raid, os_partitions, distro_name, host_config, kernel_version, admin_net
+    return net_bonding, os_raid1, os_raid6,os_partitions, distro_name, host_config, kernel_version, admin_net
 
 def run_machine(hostname, yaml_config, client):
     for machine in client.machines.list():
@@ -306,16 +331,17 @@ def run_machine(hostname, yaml_config, client):
     print("Starting deployement of %s" % machine.hostname)
     config_items = parse_config(yaml_config)
     net_bonding = config_items[0]
-    os_raid = config_items[1]
-    os_partitions = config_items[2]
-    distro_name = config_items[3]
-    host_config = config_items[4]
-    kernel_version = config_items[5]
-    admin_net = config_items[6]
+    os_raid1 = config_items[1]
+    os_raid6 = config_items[2]
+    os_partitions = config_items[3]
+    distro_name = config_items[4]
+    host_config = config_items[5]
+    kernel_version = config_items[6]
+    admin_net = config_items[7]
 
     cleanup_machine(machine)
     configure_network(machine, client, net_bonding, admin_net)
-    configure_system_disks(machine, os_raid, os_partitions)
+    configure_system_disks(machine, os_raid1, os_raid6, os_partitions)
 
     machine.refresh()
     user_data = build_user_data(machine, host_config)
@@ -358,6 +384,6 @@ def main():
     else:
         for hostname in yaml_config['machines']:
             run_machine(hostname, yaml_config['machines'][hostname], client)
-
+    print("Script ended.")
 if __name__ == "__main__":
     main()
