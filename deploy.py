@@ -45,7 +45,7 @@ def cleanup_machine(machine):
 
     machine.refresh()
 
-def define_os_disks_raid1(machine, os_raid=None, os_partitions=None):
+def define_os_disks_raid1(machine, os_raid=None):
     os_disks = []
 
     # default disk discovery
@@ -84,7 +84,7 @@ def define_os_disks_raid1(machine, os_raid=None, os_partitions=None):
 
         return os_disks
 
-def configure_os_disks_raid6(machine, os_raid6, os_partitions=None):
+def configure_os_disks_raid6(machine, os_raid6):
     os_disks = []
     if 'disks' in os_raid6.keys():
         for disk in machine.block_devices:
@@ -98,10 +98,20 @@ def configure_os_disks_raid6(machine, os_raid6, os_partitions=None):
 def configure_system_disks(machine, os_raid1=None, os_raid6=None, os_partitions=None):
     if os_raid6 is not None:
         raid_type = 6
-        disks = configure_os_disks_raid6(machine, os_raid6, os_partitions)
+        disks = configure_os_disks_raid6(machine, os_raid6)
+        if "use_lvm" in os_raid6:
+            use_lvm = os_raid6["use_lvm"]["enable"]
+            lvm_name = os_raid6["use_lvm"]["name"]
+        else:
+            use_lvm = False
     else:
         raid_type = 1
-        disks = define_os_disks_raid1(machine, os_raid1, os_partitions)
+        disks = define_os_disks_raid1(machine, os_raid1)
+        if "use_lvm" in os_raid1:
+            use_lvm = os_raid1["use_lvm"]["enable"]
+            lvm_name = os_raid1["use_lvm"]["name"]
+        else:
+            use_lvm = False
     disks[0].set_as_boot_disk()
     partitions = []
     for disk in disks:
@@ -128,14 +138,22 @@ def configure_system_disks(machine, os_raid1=None, os_raid6=None, os_partitions=
             spare_devices=[],
         )
 
-    if os_partitions is None:
-        raid.virtual_device.format("ext4")
-        raid.virtual_device.mount("/")
-    else:
+    if use_lvm:
+        vg = machine.volume_groups.create(name=lvm_name, devices=[raid.virtual_device])
         for os_part, infos in os_partitions.items():
-            part = raid.virtual_device.partitions.create(infos["size"])
-            part.format(infos["filesystem"])
-            part.mount(os_part)
+            lv = vg.logical_volumes.create(size=infos["size"], name="vg-sys"+os_part.replace('/', '-'))
+            lv.format(infos["filesystem"])
+            lv.mount(os_part)
+
+    else:
+        if os_partitions is None:
+            raid.virtual_device.format("ext4")
+            raid.virtual_device.mount("/")
+        else:
+            for os_part, infos in os_partitions.items():
+                part = raid.virtual_device.partitions.create(infos["size"])
+                part.format(infos["filesystem"])
+                part.mount(os_part)
 
     machine.refresh()
 
