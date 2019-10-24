@@ -33,12 +33,12 @@ Then, various items can be defined:
 
 * os
 * os_raid1
+* os_raid6
 * os_partitions
 * kernel
 * admin_net
 * net_bonding
-* packages
-* sources
+* user_data
 * unused_disks
 
 
@@ -55,16 +55,19 @@ OS we want to deploy on the node. The options here are the same as using the maa
 os: bionic
 ```
 
-os_raid1
---------
+os_raid1 or os_raid6
+--------------------
 
-Only raid 1 for os disks is implemented yet. If the option is set, the entry **disks** will contain the list of disks to use on the raid cluster. If this item is not specified, the script will try to guess the 2 disks to use as system disks.
+Only raid 1 and raid 6 for os disks is implemented yet. If the option is set, the entry **disks** will contain the list of disks to use on the raid cluster. If this item is not specified, the script will try to guess the 2 disks to use as system disks, with raid 1. We can use LVM on top of the raid array as on the example below. **name** and **enable** are mandatory under **use_lvm**. **os_partitions** need to be set if you want to use lvm.
 
 ```yaml
 os_raid1:
     disks:
         - sda
         - sdc
+    use_lvm:
+        enable: True
+        name: lxc
 ```
 
 os_partitions
@@ -134,26 +137,24 @@ net_bonding:
             vlan: vxlan
 ```
 
-packages
---------
+user_data
+---------
 
-You can list all the packages you want to be apt installed during the installation. Example with salt-minion package:
-
-```yaml
-packages:
-    - salt-minion
-```
-
-sources
--------
-
-If you want to use a personalized apt repository, you define it here, with the coresponding key. Example with saltstack repo:
+If you want to personalized you installation, you can use cloud-init configuration. Juste add cloud-init yaml under the user_data field. Example adding some repo:
 
 ```yaml
-sources:
-    saltstack:
-        source: deb http://repo.saltstack.com/apt/ubuntu/16.04/amd64/latest $RELEASE main
-        keyid: 754A1A7AE731F165D5E6D4BD0E08A149DE57BFBE
+user_data:
+    package_upgrade: true
+    apt:
+        sources:
+            saltstack.list: >
+                deb
+                https://repo.saltstack.com/apt/ubuntu/18.04/amd64/latest/
+                $RELEASE
+                main
+            keyid: 754A1A7AE731F165D5E6D4BD0E08A149DE57BFBE
+    packages:
+        - salt-minion
 ```
 
 unused_disks

@@ -24,12 +24,17 @@ shared: &shared
             size: 19G
             filesystem: ext4
 
-    packages:
-        - salt-minion
-    sources:
-        saltstack:
-            source: deb http://repo.saltstack.com/apt/ubuntu/18.04/amd64/latest $RELEASE main
-            keyid: 754A1A7AE731F165D5E6D4BD0E08A149DE57BFBE
+    user_data:
+        apt:
+            sources:
+                saltstack.list: >
+                    deb
+                    https://repo.saltstack.com/apt/ubuntu/18.04/amd64/latest/
+                    $RELEASE
+                    main
+                keyid: 754A1A7AE731F165D5E6D4BD0E08A149DE57BFBE
+        packages:
+            - salt-minion
 
     unused_disks:
         jbod_disks:
