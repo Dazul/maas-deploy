@@ -189,12 +189,17 @@ def configure_vlans(machine, client, vname, vdata, bond, VLANS, default_gateway,
         )
 
         if 'ip' in vdata:
-            iface.links.create(
-                mode=maas.client.enum.LinkMode.STATIC,
-                subnet=get_subnet(client, vdata['subnet']),
-                ip_address=vdata['ip'],
-                default_gateway=default_gateway
-            )
+            try:
+                iface.links.create(
+                    mode=maas.client.enum.LinkMode.STATIC,
+                    subnet=get_subnet(client, vdata['subnet']),
+                    ip_address=vdata['ip'],
+                    default_gateway=default_gateway
+                )
+            except Exception as e:
+                print(str(e.content))
+                sys.exit(-1)
+
     else:
         iface = machine.interfaces.create(
             name="br-%s" % vname,
